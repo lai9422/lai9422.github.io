@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>亞東科技大學餐廳隨機選擇器</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        #map {
+            height: 400px;
+            width: 80%;
+            margin: auto;
+        }
+        #restaurant-list {
+            margin-top: 20px;
+            text-align: left;
+            width: 80%;
+            margin: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <h1>亞東科技大學餐廳隨機選擇器</h1>
+    <label for="category">選擇類別：</label>
+    <select id="category">
+        <option value="all">全部</option>
+        <option value="早午餐">早午餐</option>
+        <option value="點心">點心</option>
+	<option value="便當">便當</option>
+	<option value="火鍋">火鍋</option>
+	<option value="小吃">小吃</option>
+	<option value="其他">其他</option>
+	<option value="飲料">飲料</option>
+    </select>
+    <button onclick="pickRandomRestaurant()">選擇餐廳</button>
+    <p id="result">這裡會顯示結果</p>
+    <div id="map"></div>
+    
+    <h2>餐廳列表</h2>
+    <div id="restaurant-list">
+        <table>
+            <thead>
+                <tr>
+                    <th>名稱</th>
+                    <th>類別</th>
+                    <th>評價</th>
+                    <th>地圖</th>
+                </tr>
+            </thead>
+            <tbody id="restaurant-table-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const restaurants = [
+            { name: "吐司廚房", category: "早午餐", map: "https://www.google.com/maps/search/?api=1&query=吐司廚房", rating: "普通", lat: 25.011, lng: 121.467 },
+            { name: "歐佳香漢堡店", category: "早午餐", map: "https://www.google.com/maps/search/?api=1&query=歐佳香漢堡店", rating: "無評價", lat: 25.012, lng: 121.469 },
+            { name: "Apple早午餐店", category: "早午餐", map: "https://www.google.com/maps/search/?api=1&query=Apple203早午餐店", rating: "不錯吃，有時等稍久", lat: 25.014, lng: 121.465 },
+            
+        ];
+
+        function pickRandomRestaurant() {
+            const category = document.getElementById("category").value;
+            const filtered = category === "all" ? restaurants : restaurants.filter(r => r.category === category);
+            const randomIndex = Math.floor(Math.random() * filtered.length);
+            const selected = filtered[randomIndex];
+            document.getElementById("result").innerHTML = `<a href="${selected.map}" target="_blank">${selected.name}</a> - 評價: ${selected.rating}`;
+        }
+
+        const map = L.map('map').setView([25.012, 121.468], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        restaurants.forEach(r => {
+            L.marker([r.lat, r.lng]).addTo(map)
+                .bindPopup(`<b>${r.name}</b><br>評價: ${r.rating}<br><a href='${r.map}' target='_blank'>查看地圖</a>`);
+        });
+
+        function populateTable() {
+            const tableBody = document.getElementById("restaurant-table-body");
+            restaurants.forEach(r => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${r.name}</td>
+                    <td>${r.category}</td>
+                    <td>${r.rating}</td>
+                    <td><a href="${r.map}" target="_blank">查看地圖</a></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        populateTable();
+    </script>
+</body>
+</html>
