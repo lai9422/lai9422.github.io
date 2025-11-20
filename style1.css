@@ -1,0 +1,112 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: #000;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+#weather-card {
+  position: absolute;
+  top: 50%;
+  right: 10%; /* 讓卡片靠右顯示，避免遮擋地球中心 */
+  transform: translateY(-50%);
+  width: 320px;
+  
+  /* 毛玻璃特效核心 */
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  
+  color: white;
+  padding: 25px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 彈跳效果 */
+  opacity: 1;
+  z-index: 10;
+}
+
+/* 隱藏狀態：縮小並透明 */
+#weather-card.hidden {
+  opacity: 0;
+  transform: translateY(-50%) scale(0.8);
+  pointer-events: none;
+  right: -350px; /* 收回右邊 */
+}
+
+#close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 24px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+#close-btn:hover { color: #fff; }
+
+#city-name {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.weather-main {
+  display: flex;
+  align-items: center;
+  margin-top: 15px;
+}
+
+#weather-icon {
+  font-size: 4rem;
+  margin-right: 15px;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+}
+
+.temp-container {
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.unit { font-size: 1.5rem; font-weight: 400; color: #ddd; }
+
+#weather-desc {
+  font-size: 1.2rem;
+  color: #aad4ff; /* 淺藍色文字 */
+  margin-top: 5px;
+  margin-bottom: 20px;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255,255,255,0.2);
+  margin: 15px 0;
+}
+
+.weather-details {
+  display: flex;
+  justify-content: space-between;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-item .label {
+  font-size: 0.8rem;
+  color: #bbb;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.detail-item .value {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-top: 4px;
+}

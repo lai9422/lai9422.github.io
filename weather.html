@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D 地球與即時天氣</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="//unpkg.com/globe.gl"></script>
+</head>
+<body>
+  <div id="globeViz"></div>
+
+  <div id="weather-card" class="hidden">
+    <button id="close-btn">×</button>
+    
+    <div class="card-content">
+      <h2 id="city-name">City Name</h2>
+      
+      <div class="weather-main">
+        <div id="weather-icon">☀️</div>
+        <div class="temp-container">
+          <span id="temperature">--</span>
+          <span class="unit">°C</span>
+        </div>
+      </div>
+      
+      <div id="weather-desc">讀取中...</div>
+
+      <div class="divider"></div>
+
+      <div class="weather-details">
+        <div class="detail-item">
+          <span class="label">風速</span>
+          <span class="value" id="windspeed">-- km/h</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">經緯度</span>
+          <span class="value" id="coords">--</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
