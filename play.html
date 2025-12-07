@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅遊戰術系統 V3.5</title>
+    <link rel="stylesheet" href="styleplay.css">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="scan-line"></div>
+    
+    <div class="container">
+        <header class="hud-header">
+            <div class="status-bar">
+                <span class="blink">● SYSTEM ONLINE</span>
+                <span>SYNC: GOOGLE SHEETS</span>
+                <span id="clock">00:00:00</span>
+            </div>
+            <h1 class="glitch-text">旅遊日誌系統_V3</h1>
+        </header>
+
+        <nav class="hud-nav">
+            <button onclick="switchTab('itinerary')" class="tech-btn active" id="btn-1">
+                <span class="icon">⚡</span> 任務行程
+            </button>
+            <button onclick="switchTab('accounting')" class="tech-btn" id="btn-2">
+                <span class="icon">💠</span> 記帳輸入
+            </button>
+        </nav>
+
+        <main>
+            <section id="itinerary" class="hud-panel active-panel">
+                <div class="panel-header">
+                    <h3 id="itinerary-status">// 正在讀取衛星資料...</h3>
+                    <div class="decoration-line"></div>
+                </div>
+                
+                <div id="itinerary-container" class="timeline">
+                    </div>
+            </section>
+
+            <section id="accounting" class="hud-panel" style="display:none;">
+                <div class="panel-header">
+                    <h3>// 經費數據上傳</h3>
+                    <div class="decoration-line"></div>
+                </div>
+
+                <form id="expenseForm" class="cyber-form">
+                    <div class="input-group">
+                        <label>消費項目 (ITEM)</label>
+                        <input type="text" id="item" placeholder="例如: 一蘭拉麵" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>金額 (COST)</label>
+                        <input type="number" id="price" placeholder="1000" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>類別 (TYPE)</label>
+                        <select id="category">
+                            <option value="食">食 (FOOD)</option>
+                            <option value="行">行 (TRANSPORT)</option>
+                            <option value="住">住 (HOTEL)</option>
+                            <option value="樂">樂 (FUN)</option>
+                            <option value="育">育 (INFO)</option>
+                            <option value="衣">衣 (CLOTHING)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        執行上傳 [ENTER]
+                    </button>
+                </form>
+            </section>
+        </main>
+        
+        <footer>
+            <p>DESIGNED FOR TRAVEL // SYNC WITH GOOGLE</p>
+        </footer>
+    </div>
+
+    <script src="scriptplay.js"></script>
+</body>
+</html>
