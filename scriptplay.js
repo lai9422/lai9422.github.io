@@ -1,5 +1,5 @@
 // =================================================================
-// 🚀 V6.1 設定區 (已填入你提供的兩個網址)
+// 🚀 V6.2 設定區 (雙軌網址已設定完成)
 // =================================================================
 
 // 1. 【表單回應 CSV】(手機新增的資料)
@@ -12,24 +12,26 @@ const CSV_MANUAL_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMdqttI
 const FORM_MISSION_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSf_2ZIfdEo6HKxRbWYx7a-KT11ShnU-EVAFarAsJGXd0mLH6g/formResponse'; 
 
 // 4. 【表單 ID 設定】
+// 新增行程用
 const ID_MIS_DATE = 'entry.378526419';
 const ID_MIS_ITEM = 'entry.145740809';
 const ID_MIS_LOC  = 'entry.821175510';
 const ID_MIS_NOTE = 'entry.1050135537';
 const ID_MIS_URL  = 'entry.264017073';
 
+// 記帳用
 const FORM_EXPENSE_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdktMtlNjCQQ3mhlxgNWpmlTivqzgfupf-Bnipx0FnA67FddA/formResponse'; 
 const ID_EXP_ITEM = 'entry.51280304';
 const ID_EXP_PRICE = 'entry.1762976228';
 const ID_EXP_CATEGORY = 'entry.194687162';
 
 // =================================================================
-// ⚙️ 系統核心邏輯
+// ⚙️ 系統核心邏輯 (雙核心讀取)
 // =================================================================
 
 window.onload = function() {
-    console.log('系統啟動 (V6.1 Hybrid)...');
-    loadMergedItinerary(); 
+    console.log('系統啟動 (V6.2 Hybrid)...');
+    loadMergedItinerary(); // 啟動合併讀取
     updateTime();
     setupFormListeners();
 };
@@ -41,6 +43,7 @@ function updateTime() {
     setTimeout(updateTime, 1000);
 }
 
+// 分頁切換
 window.switchTab = function(tabId) {
     document.querySelectorAll('.hud-panel').forEach(p => p.style.display = 'none');
     document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('active'));
@@ -64,50 +67,48 @@ async function loadMergedItinerary() {
     try {
         const promises = [];
         
-        // 1. 讀取表單回應
-        // 格式: [1]Date, [2]Item, [3]Loc, [4]Note, [5]URL
+        // 1. 讀取表單回應 (Form Data)
+        // 格式: [0]Timestamp, [1]Date, [2]Item, [3]Loc, [4]Note, [5]URL
         if(CSV_FORM_URL) {
             promises.push(
                 fetch(CSV_FORM_URL + '&t=' + Date.now())
                 .then(r => r.text())
-                .then(t => ({ source: '手機新增(表單)', text: t, indices: [1, 2, 3, 4, 5] }))
+                .then(t => ({ source: 'FORM', data: parseCSV(t, [1, 2, 3, 4, 5]) }))
             );
         }
         
-        // 2. 讀取手動試算表
-        // 格式: [0]Date, [1]Item, [2]Loc, [5]Note, [6]URL
+        // 2. 讀取手動試算表 (Manual Data)
+        // 格式: [0]Date, [1]Item, [2]Loc, ... [5]Note, [6]URL
         if(CSV_MANUAL_URL) {
             promises.push(
                 fetch(CSV_MANUAL_URL + '&t=' + Date.now())
                 .then(r => r.text())
-                .then(t => ({ source: '電腦編輯(試算表)', text: t, indices: [0, 1, 2, 5, 6] }))
+                .then(t => ({ source: 'MANUAL', data: parseCSV(t, [0, 1, 2, 5, 6]) }))
             );
+        }
+
+        if(promises.length === 0) {
+            if(statusHeader) statusHeader.innerText = '// 未設定資料來源';
+            return;
         }
 
         const results = await Promise.all(promises);
         let allData = [];
 
+        // 合併資料
         results.forEach(res => {
-            // 檢查是否讀取到 HTML 錯誤 (權限不足)
-            if(res.text.trim().startsWith('<!DOCTYPE') || res.text.trim().startsWith('<html')) {
-                console.error(`來源 [${res.source}] 讀取失敗：權限錯誤`);
-                // alert(`警告：無法讀取 [${res.source}]。\n請確認該試算表已「發布到網路」。`);
-            } else {
-                const parsed = parseCSV(res.text, res.indices);
-                console.log(`來源 [${res.source}] 成功載入 ${parsed.length} 筆`);
-                allData = allData.concat(parsed);
-            }
+            console.log(`來源 [${res.source}] 載入 ${res.data.length} 筆`);
+            allData = allData.concat(res.data);
         });
 
         // 依照日期排序
-        allData.sort((a, b) => a.date.localeCompare(b.date));
+        allData.sort((a, b) => {
+            return a.date.localeCompare(b.date);
+        });
 
         console.log(`總計行程: ${allData.length} 筆`);
         renderItinerary(allData);
-        
-        if(statusHeader) {
-            statusHeader.innerText = `// 同步完成 (共 ${allData.length} 筆)`;
-        }
+        if(statusHeader) statusHeader.innerText = `// 同步完成 (共 ${allData.length} 筆)`;
 
     } catch (err) {
         console.error('讀取失敗:', err);
@@ -115,7 +116,7 @@ async function loadMergedItinerary() {
     }
 }
 
-// 通用 CSV 解析器
+// 通用 CSV 解析器 (傳入欄位對應索引 [Date, Item, Loc, Note, Url])
 function parseCSV(text, indices) {
     const lines = text.split('\n');
     const result = [];
@@ -127,19 +128,17 @@ function parseCSV(text, indices) {
         const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
         
         const maxIdx = Math.max(...indices);
-        if(row.length > maxIdx) { // 確保欄位足夠
-            
-            // 寬鬆檢查：只要日期欄位有東西就讀進來
-            let d = row[idxDate];
-            if(d && d.length > 2) { 
-                result.push({
-                    date: d,
-                    item: row[idxItem] || '未命名',
-                    location: row[idxLoc] || '',
-                    note: row[idxNote] || '',
-                    url: row[idxUrl] || ''
-                });
-            }
+        if(row.length > maxIdx) { 
+            // 基本防呆：日期太短就跳過
+            if(!row[idxDate] || row[idxDate].length < 5) continue;
+
+            result.push({
+                date: row[idxDate],
+                item: row[idxItem] || '未命名',
+                location: row[idxLoc] || '',
+                note: row[idxNote] || '',
+                url: row[idxUrl] || ''
+            });
         }
     }
     return result;
@@ -151,7 +150,7 @@ function renderItinerary(data) {
     container.innerHTML = ''; 
 
     if(data.length === 0) {
-        container.innerHTML = '<p style="text-align:center; padding:20px;">無資料<br>請確認試算表已發布</p>';
+        container.innerHTML = '<p style="text-align:center; padding:20px;">無資料</p>';
         return;
     }
 
@@ -164,7 +163,7 @@ function renderItinerary(data) {
             dateBlock = document.createElement('div');
             dateBlock.className = 'data-row'; 
             
-            // 格式化日期：嘗試移除年份，如果格式不符則顯示原字串
+            // 格式化日期顯示 (移除年份)
             let displayDate = row.date.replace(/^\d{4}[\/-]/, '').replace(/-/g, '/');
             
             dateBlock.innerHTML = `<div class="time-col">${displayDate}</div><div class="info-col"></div>`;
@@ -182,7 +181,7 @@ function createMissionItem(parentElement, data) {
     let linkHtml = '';
     
     let rawUrl = data.url ? data.url.trim() : '';
-    // 排除無效連結
+    // 排除無效連結字串
     if (rawUrl.length > 3 && rawUrl !== 'FALSE' && !rawUrl.includes('[URL]')) {
         if (!rawUrl.startsWith('http')) rawUrl = 'https://' + rawUrl;
         let btnText = "🔗 開啟連結";
@@ -227,6 +226,7 @@ function setupFormListeners() {
             formData.append(ID_MIS_NOTE, document.getElementById('m-note').value);
             formData.append(ID_MIS_URL, document.getElementById('m-url').value);
             
+            // 本地暫時顯示
             const tempRow = {
                 date: document.getElementById('m-date').value,
                 item: document.getElementById('m-item').value,
@@ -238,6 +238,7 @@ function setupFormListeners() {
             sendToGoogle(FORM_MISSION_URL, formData, this.querySelector('button[type="submit"]'), '新增成功', () => {
                 switchTab('itinerary');
                 const container = document.getElementById('itinerary-container');
+                
                 // 移除"無資料"提示
                 const emptyP = container.querySelector('p');
                 if(emptyP) emptyP.remove();
