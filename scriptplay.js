@@ -1,103 +1,91 @@
 // =================================================================
-// 🚀 設定區 (已填入你的資料，請勿修改第 1 行格式)
+// 1. 確保這一行是完整的 (不要只貼網址，要包含 const SHEET_CSV_URL = ...)
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSVIFEt-3BoK2wakKbxqX2PbTS_KY8OU6bFXI_qoqlttS4G4sXcybgPRgdxOFmwCZt25sUxlJB5yHVP/pub?output=csv'; 
 // =================================================================
 
-// 1. 【表單回應 CSV】讀取行程資料庫
-const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSVIFEt-3BoK2wakKbxqX2PbTS_KY8OU6bFXI_qoqlttS4G4sXcybgPRgdxOFmwCZt25sUxlJB5yHVP/pub?output=csv'; 
-
-// 2. 【新增行程用】Google 表單發送網址
+// 2. 表單設定
 const FORM_MISSION_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSf_2ZIfdEo6HKxRbWYx7a-KT11ShnU-EVAFarAsJGXd0mLH6g/formResponse'; 
+const ID_MIS_DATE = 'entry.378526419';
+const ID_MIS_ITEM = 'entry.145740809';
+const ID_MIS_LOC  = 'entry.821175510';
+const ID_MIS_NOTE = 'entry.1050135537';
+const ID_MIS_URL  = 'entry.264017073';
 
-// 3. 【新增行程 ID】
-const ID_MIS_DATE = 'entry.378526419';  // 日期
-const ID_MIS_ITEM = 'entry.145740809';  // 項目
-const ID_MIS_LOC  = 'entry.821175510';  // 地點
-const ID_MIS_NOTE = 'entry.1050135537'; // 備註
-const ID_MIS_URL  = 'entry.264017073';  // 連結
-
-// 4. 【記帳用】Google 表單設定
 const FORM_EXPENSE_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdktMtlNjCQQ3mhlxgNWpmlTivqzgfupf-Bnipx0FnA67FddA/formResponse'; 
 const ID_EXP_ITEM = 'entry.51280304';
 const ID_EXP_PRICE = 'entry.1762976228';
 const ID_EXP_CATEGORY = 'entry.194687162';
 
-// =================================================================
-// ⚙️ 系統核心邏輯
-// =================================================================
+// 3. 系統核心
+window.onload = function() {
+    console.log('系統啟動...');
+    loadItinerary();
+    updateTime();
+    
+    // 綁定表單監聽
+    setupFormListeners();
+};
 
-// 1. 系統時鐘
 function updateTime() {
     const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', {hour12: false});
     const clockEl = document.getElementById('clock');
-    if(clockEl) clockEl.innerText = timeString;
+    if(clockEl) clockEl.innerText = now.toLocaleTimeString('en-US', {hour12: false});
+    setTimeout(updateTime, 1000);
 }
-setInterval(updateTime, 1000);
-updateTime();
 
-// 2. 切換分頁 (修復 ReferenceError)
-// 綁定到 window 確保 HTML 按鈕找得到
+// 全域切換分頁函式
 window.switchTab = function(tabId) {
-    // 隱藏所有面板
-    document.querySelectorAll('.hud-panel').forEach(p => {
-        p.style.display = 'none';
-        p.classList.remove('active-panel');
-    });
-    // 移除按鈕活性
+    console.log('切換到分頁:', tabId);
+    document.querySelectorAll('.hud-panel').forEach(p => p.style.display = 'none');
     document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('active'));
 
-    // 顯示目標面板
     const target = document.getElementById(tabId);
     if(target) {
         target.style.display = 'block';
         setTimeout(() => target.classList.add('active-panel'), 10);
+    } else {
+        alert('錯誤：找不到 ID 為 ' + tabId + ' 的區塊，請檢查 HTML');
     }
     
-    // 更新按鈕狀態
+    // 更新按鈕樣式
     if(tabId === 'itinerary') document.getElementById('btn-1')?.classList.add('active');
     if(tabId === 'add-mission') document.getElementById('btn-3')?.classList.add('active');
     if(tabId === 'accounting') document.getElementById('btn-2')?.classList.add('active');
 }
 
-// 3. 讀取行程表
 function loadItinerary() {
-    console.log("正在連接資料庫...");
+    console.log("正在讀取 CSV...");
     const statusHeader = document.getElementById('itinerary-status');
     
-    // 加上時間參數防止快取
     fetch(SHEET_CSV_URL + '&t=' + Date.now())
-        .then(res => {
-            if (!res.ok) throw new Error("網路連線錯誤");
-            return res.text();
-        })
+        .then(res => res.text())
         .then(csvText => {
-            console.log("資料下載成功");
+            if(csvText.trim().startsWith('<!DOCTYPE') || csvText.trim().startsWith('<html')) {
+                alert('【權限錯誤】\nGoogle 試算表沒有公開。\n請去試算表 -> 共用 -> 設為「知道連結者皆可檢視」。');
+                return;
+            }
+            console.log("CSV 下載成功，長度:", csvText.length);
             const rows = parseCSV(csvText);
             renderItinerary(rows);
             if(statusHeader) statusHeader.innerText = '// 任務清單 (SYNCED)';
         })
         .catch(err => {
             console.error('讀取失敗:', err);
-            if(statusHeader) statusHeader.innerText = '// 連線失敗 (OFFLINE)';
+            statusHeader.innerText = '// 連線失敗 (OFFLINE)';
+            // alert('無法讀取行程表，請檢查網路或連結'); // 避免一直跳窗干擾
         });
 }
 
-// 4. CSV 解析器 (略過第一欄時間戳記)
 function parseCSV(text) {
     const lines = text.split('\n');
     const result = [];
-    
-    // 從第 1 行開始讀 (跳過標題列)
+    // 從第 1 行開始 (跳過標題)
     for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        
-        // 切割 CSV
-        const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
-        
-        // Google 表單回應格式：[0]時間戳記, [1]日期, [2]項目, [3]地點, [4]備註, [5]連結
+        const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
         if(row.length > 2) { 
             result.push({
-                date: row[1] || '', // 改抓第 2 格
+                date: row[1] || '',
                 item: row[2] || '未命名行程',
                 location: row[3] || '',
                 note: row[4] || '',
@@ -105,180 +93,140 @@ function parseCSV(text) {
             });
         }
     }
-    
-    // 依照日期重新排序
-    result.sort((a, b) => {
-        if (a.date < b.date) return -1;
-        if (a.date > b.date) return 1;
-        return 0;
-    });
-
+    // 日期排序
+    result.sort((a, b) => a.date.localeCompare(b.date));
     return result;
 }
 
-// 5. 渲染畫面
 function renderItinerary(data) {
     const container = document.getElementById('itinerary-container');
     if(!container) return;
-    
     container.innerHTML = ''; 
-    let currentDate = '';
-    let dateBlock = null;
 
     if(data.length === 0) {
-        container.innerHTML = '<p style="text-align:center; padding:20px; opacity:0.7;">目前尚無行程資料<br>請至「新增行程」頁面添加</p>';
+        container.innerHTML = '<p style="text-align:center; padding:20px;">目前無行程，請按「新增行程」添加</p>';
         return;
     }
 
+    let currentDate = '';
+    let dateBlock = null;
+
     data.forEach(row => {
-        // 建立日期標題
         if (row.date !== currentDate) {
             currentDate = row.date;
             dateBlock = document.createElement('div');
             dateBlock.className = 'data-row'; 
-            
-            const timeCol = document.createElement('div');
-            timeCol.className = 'time-col';
-            // 只顯示 月/日
-            timeCol.innerHTML = row.date.replace(/^\d{4}[\/-]/, '').replace(/-/g, '/'); 
-            
-            const infoCol = document.createElement('div');
-            infoCol.className = 'info-col';
-            
-            dateBlock.appendChild(timeCol);
-            dateBlock.appendChild(infoCol);
+            dateBlock.innerHTML = `<div class="time-col">${row.date.slice(5)}</div><div class="info-col"></div>`; // 取月日
             container.appendChild(dateBlock);
         }
         createMissionItem(dateBlock.querySelector('.info-col'), row);
     });
 }
 
-// 6. 建立單個任務 DOM
 function createMissionItem(parentElement, data) {
     const itemDiv = document.createElement('div');
     itemDiv.className = "mission-item-entry"; 
-
-    let locationHtml = data.location ? `<span style="font-size:0.8em; opacity:0.7; margin-left:5px;">📍${data.location}</span>` : '';
-    const h4 = document.createElement('h4');
-    h4.innerHTML = `${data.item} ${locationHtml}`;
-    itemDiv.appendChild(h4);
-
-    if(data.note) {
-        const p = document.createElement('p');
-        p.innerText = `> ${data.note}`;
-        itemDiv.appendChild(p);
-    }
-
+    
+    let locHtml = data.location ? `<span style="font-size:0.8em; opacity:0.7; margin-left:5px;">📍${data.location}</span>` : '';
+    let linkHtml = '';
+    
     let rawUrl = data.url ? data.url.trim() : '';
-    if (rawUrl && rawUrl.length > 3) {
+    if (rawUrl.length > 3) {
         if (!rawUrl.startsWith('http')) rawUrl = 'https://' + rawUrl;
+        let btnText = "🔗 開啟連結";
+        let btnStyle = "";
+        if (rawUrl.includes('youtu')) { btnText = "▶ 觀看影片"; btnStyle = "color:#ffaaaa; border-color:red;"; }
+        else if (rawUrl.includes('map')) { btnText = "🗺️ 開啟地圖"; }
         
-        const linkBtn = document.createElement('a');
-        linkBtn.href = rawUrl;
-        linkBtn.target = "_blank";
-        linkBtn.rel = "noopener noreferrer"; 
-        linkBtn.className = "small-link-btn";
-
-        if (rawUrl.includes('youtube.com') || rawUrl.includes('youtu.be')) {
-            linkBtn.innerHTML = "▶ 觀看影片";
-            linkBtn.style.borderColor = "#ff0000";
-            linkBtn.style.color = "#ffaaaa";
-        } else if (rawUrl.includes('map')) {
-            linkBtn.innerHTML = "🗺️ 開啟地圖";
-        } else {
-            linkBtn.innerHTML = "🔗 開啟連結";
-        }
-        itemDiv.appendChild(linkBtn);
+        linkHtml = `<a href="${rawUrl}" target="_blank" rel="noopener noreferrer" class="small-link-btn" style="${btnStyle}">${btnText}</a>`;
     }
+
+    itemDiv.innerHTML = `
+        <h4>${data.item} ${locHtml}</h4>
+        ${data.note ? `<p>> ${data.note}</p>` : ''}
+        ${linkHtml}
+    `;
     parentElement.appendChild(itemDiv);
 }
 
-// 7. 發送表單功能 (通用)
-function sendToGoogle(url, formData, btn, originalText, callback) {
-    btn.innerText = '傳輸中...';
-    btn.disabled = true;
-
-    fetch(url, { method: 'POST', body: formData, mode: 'no-cors' })
-    .then(() => {
-        if(callback) callback();
-        btn.innerText = originalText;
-        btn.disabled = false;
-    })
-    .catch(() => {
-        alert('上傳失敗，請檢查網路');
-        btn.innerText = originalText;
-        btn.disabled = false;
-    });
-}
-
-// 綁定事件
-document.addEventListener('DOMContentLoaded', () => {
-    // 啟動讀取行程
-    loadItinerary();
-
-    // 綁定記帳表單
-    const expenseForm = document.getElementById('expenseForm');
-    if(expenseForm) {
-        expenseForm.addEventListener('submit', function(e) {
+function setupFormListeners() {
+    // 記帳表單
+    const expForm = document.getElementById('expenseForm');
+    if(expForm) {
+        expForm.onsubmit = function(e) {
             e.preventDefault();
-            const btn = this.querySelector('.submit-btn');
-            const originalText = btn.innerText;
-            
             const formData = new FormData();
             formData.append(ID_EXP_ITEM, document.getElementById('item').value);
             formData.append(ID_EXP_PRICE, document.getElementById('price').value);
             formData.append(ID_EXP_CATEGORY, document.getElementById('category').value);
-
-            sendToGoogle(FORM_EXPENSE_URL, formData, btn, originalText, () => {
-                alert('>> 記帳成功 <<');
-            });
+            // 這裡傳入的是 submit 按鈕 (不是清除按鈕)，所以用 querySelector 找 type=submit
+            sendToGoogle(FORM_EXPENSE_URL, formData, this.querySelector('button[type="submit"]'), '記帳成功');
             this.reset();
-        });
+        }
     }
-
-    // 綁定新增行程表單
-    const missionForm = document.getElementById('missionForm');
-    if(missionForm) {
-        missionForm.addEventListener('submit', function(e) {
+    // 新增行程表單
+    const misForm = document.getElementById('missionForm');
+    if(misForm) {
+        misForm.onsubmit = function(e) {
             e.preventDefault();
-            const btn = this.querySelector('.submit-btn');
-            const originalText = btn.innerText;
-
-            // 取得欄位值
-            const dateVal = document.getElementById('m-date').value;
-            const itemVal = document.getElementById('m-item').value;
-            const locVal = document.getElementById('m-location').value;
-            const noteVal = document.getElementById('m-note').value;
-            const urlVal = document.getElementById('m-url').value;
-
             const formData = new FormData();
-            formData.append(ID_MIS_DATE, dateVal);
-            formData.append(ID_MIS_ITEM, itemVal);
-            formData.append(ID_MIS_LOC, locVal);
-            formData.append(ID_MIS_NOTE, noteVal);
-            formData.append(ID_MIS_URL, urlVal);
-
-            sendToGoogle(FORM_MISSION_URL, formData, btn, originalText, () => {
-                alert('>> 新增成功！ <<\n約 3-5 分鐘後會同步到行程表');
-                
-                // 暫時在畫面顯示剛剛新增的資料
+            formData.append(ID_MIS_DATE, document.getElementById('m-date').value);
+            formData.append(ID_MIS_ITEM, document.getElementById('m-item').value);
+            formData.append(ID_MIS_LOC, document.getElementById('m-location').value);
+            formData.append(ID_MIS_NOTE, document.getElementById('m-note').value);
+            formData.append(ID_MIS_URL, document.getElementById('m-url').value);
+            
+            // 暫存輸入的資料，用於本地顯示
+            const inputDate = document.getElementById('m-date').value;
+            const tempRow = {
+                date: inputDate,
+                item: document.getElementById('m-item').value,
+                location: document.getElementById('m-location').value,
+                note: document.getElementById('m-note').value,
+                url: document.getElementById('m-url').value
+            };
+            
+            sendToGoogle(FORM_MISSION_URL, formData, this.querySelector('button[type="submit"]'), '新增成功', () => {
                 switchTab('itinerary');
+                // 1. 切換回行程表
                 const container = document.getElementById('itinerary-container');
-                if(container) {
-                    const emptyMsg = container.querySelector('p');
-                    if(emptyMsg) emptyMsg.remove();
-
-                    const newDiv = document.createElement('div');
-                    newDiv.className = 'data-row';
-                    newDiv.style.borderLeft = '2px solid #ffd700'; 
-                    newDiv.innerHTML = `<div class="time-col" style="color:#ffd700">NEW</div><div class="info-col"></div>`;
-                    createMissionItem(newDiv.querySelector('.info-col'), {
-                        item: itemVal, location: locVal, note: noteVal, url: urlVal
-                    });
-                    container.insertBefore(newDiv, container.firstChild);
-                }
+                
+                // 2. 建立新區塊 (顯示輸入的日期，而不是 NEW)
+                const newDiv = document.createElement('div');
+                newDiv.className = 'data-row';
+                newDiv.style.borderLeft = '2px solid #ffd700'; // 金色邊框標記
+                
+                // 取出日期部分 (例如 2025/12/20 -> 12/20)
+                let displayDate = inputDate.replace(/^\d{4}[\/-]/, '').replace(/-/g, '/');
+                if(!displayDate) displayDate = "NEW"; // 防呆
+                
+                newDiv.innerHTML = `<div class="time-col" style="color:#ffd700">${displayDate}</div><div class="info-col"></div>`;
+                
+                createMissionItem(newDiv.querySelector('.info-col'), tempRow);
+                
+                // 3. 插入到最下方 (appendChild)
+                container.appendChild(newDiv);
+                
+                // 自動捲動到底部，讓用戶看到新增的項目
+                newDiv.scrollIntoView({ behavior: 'smooth' });
             });
             this.reset();
-        });
+        }
     }
-});
+}
+
+function sendToGoogle(url, formData, btn, successMsg, callback) {
+    const orgText = btn.innerText;
+    btn.innerText = '傳送中...';
+    btn.disabled = true;
+    fetch(url, { method: 'POST', body: formData, mode: 'no-cors' })
+        .then(() => {
+            alert('>> ' + successMsg + ' <<');
+            if(callback) callback();
+        })
+        .catch(err => alert('發送失敗'))
+        .finally(() => {
+            btn.innerText = orgText;
+            btn.disabled = false;
+        });
+}
