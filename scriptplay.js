@@ -1,8 +1,8 @@
 // ================= 設定區 =================
-// 行程表 CSV (你的專屬連結)
+// 1. 你的行程表 CSV 網址
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMdqttI_qqT7JLjKBK2jJ9DoGU9i8t7cz8DnpCnRywMbZHgA5xo5d7sKDPp8NGZyWsJ6m4WO4LlHG5/pub?output=csv'; 
 
-// 記帳表單 (你的專屬連結)
+// 2. 記帳表單設定
 const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdktMtlNjCQQ3mhlxgNWpmlTivqzgfupf-Bnipx0FnA67FddA/formResponse'; 
 const ID_ITEM = 'entry.51280304';
 const ID_PRICE = 'entry.1762976228';
@@ -40,6 +40,7 @@ function loadItinerary() {
     console.log("正在連接衛星資料庫...");
     const statusHeader = document.getElementById('itinerary-status');
     
+    // 加上時間戳記 &t=... 防止手機讀到舊的快取
     fetch(SHEET_CSV_URL + '&t=' + Date.now())
         .then(res => {
             if (!res.ok) throw new Error("網路連線錯誤");
@@ -62,7 +63,9 @@ function parseCSV(text) {
     const result = [];
     for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
+        // 處理 CSV 格式 (避免逗號切錯)
         const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
+        
         if(row.length > 2) { 
             result.push({
                 date: row[0] || '',
@@ -76,7 +79,7 @@ function parseCSV(text) {
     return result;
 }
 
-// 渲染畫面 (★這裡有修改：自動修復網址)
+// 渲染畫面 (★這裡有針對 YouTube 優化)
 function renderItinerary(data) {
     const container = document.getElementById('itinerary-container');
     container.innerHTML = ''; 
@@ -118,12 +121,14 @@ function renderItinerary(data) {
             itemDiv.appendChild(p);
         }
 
-        // ★★★ 關鍵修改區：自動判斷並修復網址 ★★★
-        let rawUrl = row.url.trim();
-        // 只要格子裡有東西，而且不是 FALSE
+        // ★★★ 連結按鈕邏輯 (優化版) ★★★
+        // 1. 強制去除前後空白
+        let rawUrl = row.url ? row.url.trim() : '';
+        
+        // 2. 檢查網址是否有效
         if (rawUrl && rawUrl !== 'FALSE' && rawUrl.length > 3) {
             
-            // 如果網址沒有 http 開頭，自動加上 https://
+            // 自動補齊 https (防止 GitHub 404)
             if (!rawUrl.startsWith('http')) {
                 rawUrl = 'https://' + rawUrl;
             }
@@ -132,7 +137,18 @@ function renderItinerary(data) {
             linkBtn.href = rawUrl;
             linkBtn.target = "_blank"; 
             linkBtn.className = "small-link-btn";
-            linkBtn.innerHTML = "［ 開啟連結 ］";
+
+            // 3. 特別偵測 YouTube 連結，改變按鈕外觀
+            if (rawUrl.includes('youtube.com') || rawUrl.includes('youtu.be')) {
+                linkBtn.innerHTML = "▶ 觀看影片";
+                linkBtn.style.borderColor = "#ff0000"; // 紅色邊框
+                linkBtn.style.color = "#ffaaaa";       // 淡紅色文字
+            } else if (rawUrl.includes('map')) {
+                linkBtn.innerHTML = "🗺️ 開啟地圖";
+            } else {
+                linkBtn.innerHTML = "🔗 開啟連結";
+            }
+            
             itemDiv.appendChild(linkBtn);
         }
         // ★★★ 修改結束 ★★★
