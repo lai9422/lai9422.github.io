@@ -1,27 +1,28 @@
 // =================================================================
-// 🚀 設定區 (已填入你提供的最新網址)
+// 🚀 設定區 (已填入你的資料，請勿修改第 1 行格式)
 // =================================================================
 
 // 1. 【表單回應 CSV】讀取行程資料庫
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSVIFEt-3BoK2wakKbxqX2PbTS_KY8OU6bFXI_qoqlttS4G4sXcybgPRgdxOFmwCZt25sUxlJB5yHVP/pub?output=csv'; 
 
-// 2. 【新增行程用】Google 表單發送網址 (表單 ID 已設定)
+// 2. 【新增行程用】Google 表單發送網址
 const FORM_MISSION_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSf_2ZIfdEo6HKxRbWYx7a-KT11ShnU-EVAFarAsJGXd0mLH6g/formResponse'; 
 
+// 3. 【新增行程 ID】
 const ID_MIS_DATE = 'entry.378526419';  // 日期
 const ID_MIS_ITEM = 'entry.145740809';  // 項目
 const ID_MIS_LOC  = 'entry.821175510';  // 地點
 const ID_MIS_NOTE = 'entry.1050135537'; // 備註
 const ID_MIS_URL  = 'entry.264017073';  // 連結
 
-// 3. 【記帳用】Google 表單設定 (維持不變)
+// 4. 【記帳用】Google 表單設定
 const FORM_EXPENSE_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdktMtlNjCQQ3mhlxgNWpmlTivqzgfupf-Bnipx0FnA67FddA/formResponse'; 
 const ID_EXP_ITEM = 'entry.51280304';
 const ID_EXP_PRICE = 'entry.1762976228';
 const ID_EXP_CATEGORY = 'entry.194687162';
 
 // =================================================================
-// ⚙️ 系統核心邏輯 (已修復 switchTab 錯誤)
+// ⚙️ 系統核心邏輯
 // =================================================================
 
 // 1. 系統時鐘
@@ -35,7 +36,7 @@ setInterval(updateTime, 1000);
 updateTime();
 
 // 2. 切換分頁 (修復 ReferenceError)
-// 我們將函式綁定到 window，確保 HTML 按鈕一定找得到它
+// 綁定到 window 確保 HTML 按鈕找得到
 window.switchTab = function(tabId) {
     // 隱藏所有面板
     document.querySelectorAll('.hud-panel').forEach(p => {
@@ -81,27 +82,19 @@ function loadItinerary() {
         });
 }
 
-// 4. CSV 解析器 (已針對 Google 表單回應格式調整)
+// 4. CSV 解析器 (略過第一欄時間戳記)
 function parseCSV(text) {
     const lines = text.split('\n');
     const result = [];
-    
-    // Google 表單回應 CSV 結構：
-    // Index 0: 時間戳記 (我們不需要)
-    // Index 1: 日期
-    // Index 2: 項目
-    // Index 3: 地點
-    // Index 4: 備註
-    // Index 5: 連結
     
     // 從第 1 行開始讀 (跳過標題列)
     for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         
-        // 使用正規表達式切割 CSV，避免逗號切錯
+        // 切割 CSV
         const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
         
-        // 確保資料欄位足夠
+        // Google 表單回應格式：[0]時間戳記, [1]日期, [2]項目, [3]地點, [4]備註, [5]連結
         if(row.length > 2) { 
             result.push({
                 date: row[1] || '', // 改抓第 2 格
@@ -113,9 +106,8 @@ function parseCSV(text) {
         }
     }
     
-    // 依照日期重新排序 (因為表單是照填寫順序排的)
+    // 依照日期重新排序
     result.sort((a, b) => {
-        // 簡單的日期字串比較 (例如 "2025/12/20" vs "2025/12/21")
         if (a.date < b.date) return -1;
         if (a.date > b.date) return 1;
         return 0;
@@ -139,7 +131,7 @@ function renderItinerary(data) {
     }
 
     data.forEach(row => {
-        // 如果遇到新的一天，建立日期標題
+        // 建立日期標題
         if (row.date !== currentDate) {
             currentDate = row.date;
             dateBlock = document.createElement('div');
@@ -147,7 +139,7 @@ function renderItinerary(data) {
             
             const timeCol = document.createElement('div');
             timeCol.className = 'time-col';
-            // 移除年份，只顯示 月/日 (讓畫面更乾淨)
+            // 只顯示 月/日
             timeCol.innerHTML = row.date.replace(/^\d{4}[\/-]/, '').replace(/-/g, '/'); 
             
             const infoCol = document.createElement('div');
@@ -219,7 +211,7 @@ function sendToGoogle(url, formData, btn, originalText, callback) {
     });
 }
 
-// 綁定事件 (當網頁載入完成後)
+// 綁定事件
 document.addEventListener('DOMContentLoaded', () => {
     // 啟動讀取行程
     loadItinerary();
@@ -269,22 +261,20 @@ document.addEventListener('DOMContentLoaded', () => {
             sendToGoogle(FORM_MISSION_URL, formData, btn, originalText, () => {
                 alert('>> 新增成功！ <<\n約 3-5 分鐘後會同步到行程表');
                 
-                // 暫時在畫面顯示剛剛新增的資料 (不用等 Google 更新)
+                // 暫時在畫面顯示剛剛新增的資料
                 switchTab('itinerary');
                 const container = document.getElementById('itinerary-container');
                 if(container) {
-                    // 移除「無資料」的提示
                     const emptyMsg = container.querySelector('p');
                     if(emptyMsg) emptyMsg.remove();
 
                     const newDiv = document.createElement('div');
                     newDiv.className = 'data-row';
-                    newDiv.style.borderLeft = '2px solid #ffd700'; // 金色標記
+                    newDiv.style.borderLeft = '2px solid #ffd700'; 
                     newDiv.innerHTML = `<div class="time-col" style="color:#ffd700">NEW</div><div class="info-col"></div>`;
                     createMissionItem(newDiv.querySelector('.info-col'), {
                         item: itemVal, location: locVal, note: noteVal, url: urlVal
                     });
-                    // 插在最上面
                     container.insertBefore(newDiv, container.firstChild);
                 }
             });
