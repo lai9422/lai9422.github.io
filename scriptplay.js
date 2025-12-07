@@ -40,7 +40,7 @@ function loadItinerary() {
     console.log("正在連接衛星資料庫...");
     const statusHeader = document.getElementById('itinerary-status');
     
-    // 加上時間戳記 &t=... 防止手機讀到舊的快取
+    // 加上時間戳記防止快取
     fetch(SHEET_CSV_URL + '&t=' + Date.now())
         .then(res => {
             if (!res.ok) throw new Error("網路連線錯誤");
@@ -63,7 +63,6 @@ function parseCSV(text) {
     const result = [];
     for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        // 處理 CSV 格式 (避免逗號切錯)
         const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
         
         if(row.length > 2) { 
@@ -79,7 +78,7 @@ function parseCSV(text) {
     return result;
 }
 
-// 渲染畫面 (★這裡有針對 YouTube 優化)
+// 渲染畫面
 function renderItinerary(data) {
     const container = document.getElementById('itinerary-container');
     container.innerHTML = ''; 
@@ -121,28 +120,29 @@ function renderItinerary(data) {
             itemDiv.appendChild(p);
         }
 
-        // ★★★ 連結按鈕邏輯 (優化版) ★★★
-        // 1. 強制去除前後空白
+        // ★★★ 網址處理區 ★★★
         let rawUrl = row.url ? row.url.trim() : '';
         
-        // 2. 檢查網址是否有效
-        if (rawUrl && rawUrl !== 'FALSE' && rawUrl.length > 3) {
+        // 排除無效的文字，例如 "[URL]" 或 "FALSE"
+        if (rawUrl && rawUrl !== 'FALSE' && !rawUrl.includes('[URL]') && rawUrl.length > 3) {
             
-            // 自動補齊 https (防止 GitHub 404)
+            // 自動補齊 https
             if (!rawUrl.startsWith('http')) {
                 rawUrl = 'https://' + rawUrl;
             }
 
             const linkBtn = document.createElement('a');
             linkBtn.href = rawUrl;
-            linkBtn.target = "_blank"; 
+            linkBtn.target = "_blank";
+            // ★新增：這行是用來防止瀏覽器封鎖新視窗的關鍵
+            linkBtn.rel = "noopener noreferrer"; 
             linkBtn.className = "small-link-btn";
 
-            // 3. 特別偵測 YouTube 連結，改變按鈕外觀
+            // 判斷按鈕文字
             if (rawUrl.includes('youtube.com') || rawUrl.includes('youtu.be')) {
                 linkBtn.innerHTML = "▶ 觀看影片";
-                linkBtn.style.borderColor = "#ff0000"; // 紅色邊框
-                linkBtn.style.color = "#ffaaaa";       // 淡紅色文字
+                linkBtn.style.borderColor = "#ff0000";
+                linkBtn.style.color = "#ffaaaa";
             } else if (rawUrl.includes('map')) {
                 linkBtn.innerHTML = "🗺️ 開啟地圖";
             } else {
@@ -151,7 +151,6 @@ function renderItinerary(data) {
             
             itemDiv.appendChild(linkBtn);
         }
-        // ★★★ 修改結束 ★★★
 
         if (dateBlock) {
              dateBlock.querySelector('.info-col').appendChild(itemDiv);
