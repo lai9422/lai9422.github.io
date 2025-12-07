@@ -8,7 +8,7 @@ const CSV_FORM_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSVIFEt-3B
 
 // 2. 【手動編輯 CSV】(你在電腦直接打字的試算表)
 // 請填入你最早(V3版本)用的那個 CSV 網址。如果不想用這個，請留空 '' 即可。
-const CSV_MANUAL_URL = '請在這裡貼上你原本手動編輯的那份CSV網址'; 
+const CSV_MANUAL_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMdqttI_qqT7JLjKBK2jJ9DoGU9i8t7cz8DnpCnRywMbZHgA5xo5d7sKDPp8NGZyWsJ6m4WO4LlHG5/pub?output=csv'; 
 
 // 3. 【新增行程表單】發送網址
 const FORM_MISSION_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSf_2ZIfdEo6HKxRbWYx7a-KT11ShnU-EVAFarAsJGXd0mLH6g/formResponse'; 
@@ -269,3 +269,4 @@ function sendToGoogle(url, formData, btn, successMsg, callback) {
             btn.disabled = false;
         });
 }
+
