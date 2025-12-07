@@ -71,7 +71,7 @@ async function loadMergedItinerary() {
         // 格式: [0]Timestamp, [1]Date, [2]Item, [3]Loc, [4]Note, [5]URL
         if(CSV_FORM_URL) {
             promises.push(
-                fetch(CSV_FORM_URL + '&t=' + Date.now())
+                fetch(CSV_MANUAL_URL + '&cache_buster=' + Math.random())
                 .then(r => r.text())
                 .then(t => ({ source: 'FORM', data: parseCSV(t, [1, 2, 3, 4, 5]) }))
             );
@@ -274,3 +274,4 @@ function sendToGoogle(url, formData, btn, successMsg, callback) {
             btn.disabled = false;
         });
 }
+
