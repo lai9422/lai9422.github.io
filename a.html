@@ -10,9 +10,9 @@
         .container { max-width: 1100px; margin: 0 auto; }
         .header { text-align: center; margin-bottom: 2rem; }
         .header h1 { font-size: 1.8rem; background: linear-gradient(135deg, #1e3c72, #2a5298); background-clip: text; -webkit-background-clip: text; color: transparent; }
-        .stats-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 0.8rem 1.5rem; border-radius: 60px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 2rem; flex-wrap: wrap; gap: 10px; }
+        .stats-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 0.8rem 1.5rem; border-radius: 60px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 2rem; flex-wrap: wrap; gap: 12px; }
         .progress-info { font-weight: 600; background: #eef2ff; padding: 0.3rem 1rem; border-radius: 40px; font-size: 0.9rem; }
-        .controls { display: flex; gap: 12px; flex-wrap: wrap; }
+        .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
         button { background: #fff; border: 1px solid #cbd5e1; padding: 0.5rem 1rem; border-radius: 40px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; font-size: 0.85rem; }
         button.primary { background: #2c5f8a; border-color: #2c5f8a; color: white; }
         button.primary:hover { background: #1e4668; }
@@ -31,9 +31,16 @@
         .feedback.correct { background: #e6f9ed; border-left-color: #2b7e3a; }
         .feedback.wrong { background: #ffeaea; border-left-color: #c2410c; }
         .action-buttons { display: flex; justify-content: space-between; gap: 12px; margin-top: 1rem; }
-        .score-area { text-align: center; margin-top: 2rem; background: white; border-radius: 2rem; padding: 1.2rem; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .score-area { text-align: center; margin-top: 2rem; background: white; border-radius: 2rem; padding: 1.2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .score-panel-text { font-size: 1rem; color: #1e4668; background: #eef2ff; padding: 0.5rem 1.2rem; border-radius: 40px; display: inline-block; margin-bottom: 12px; }
+        .bottom-actions { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+        .jump-section { display: inline-flex; align-items: center; gap: 8px; background: #f8fafc; padding: 0.2rem 1rem; border-radius: 48px; border: 1px solid #e2e8f0; }
+        .jump-section label { font-size: 0.8rem; font-weight: 500; color: #2c5f8a; }
+        .jump-section input { width: 70px; padding: 0.3rem 0.5rem; border-radius: 32px; border: 1px solid #cbd5e1; text-align: center; font-weight: 600; }
+        .jump-section button { background: #2c5f8a; color: white; border: none; padding: 0.3rem 0.9rem; border-radius: 32px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+        .jump-section button:hover { background: #1e4668; transform: translateY(-1px); }
         footer { text-align: center; margin-top: 2rem; font-size: 0.75rem; color: #6c86a3; }
-        @media (max-width: 640px) { .quiz-card { padding: 1.2rem; } .question-text { font-size: 1rem; } .stats-bar { flex-direction: column; } }
+        @media (max-width: 640px) { .quiz-card { padding: 1.2rem; } .question-text { font-size: 1rem; } .stats-bar { flex-direction: column; align-items: stretch; } }
     </style>
 </head>
 <body>
@@ -45,21 +52,31 @@
     <div class="stats-bar">
         <div class="progress-info" id="progressText">載入中...</div>
         <div class="controls">
-            <button id="prevBtn" disabled>◀ 上一題</button>
-            <button id="nextBtn">下一題 ▶</button>
-            <button id="resetBtn">⟳ 重設進度</button>
-            <button id="showScoreBtn">📊 查看總分</button>
+            
         </div>
     </div>
     <div id="quizContainer"></div>
-    <div class="score-area" id="scorePanel">💡 點擊「查看總分」檢視答題統計 | 完整收錄264題，全部來自官方試題</div>
+    <!-- 下方區域：查看總分按鈕 + 題號跳轉控制 -->
+    <div class="score-area" id="scorePanel">
+        <div class="score-panel-text" id="scoreMessage">💡 點擊「查看總分」檢視答題統計 | 完整收錄264題，全部來自官方試題</div>
+        <div class="bottom-actions">
+            <button id="prevBtn" disabled>◀ 上一題</button>
+            <button id="nextBtn">下一題 ▶</button>
+            <button id="resetBtn">⟳ 重設進度</button>
+            <button id="showScoreBtnBottom">📊 查看總分</button>
+            <div class="jump-section">
+                <label>📌 跳題</label>
+                <input type="number" id="jumpToInput" min="1" max="264" value="1" step="1">
+                <button id="jumpBtn">前往</button>
+            </div>
+        </div>
+    </div>
     <footer>題庫來源：MTA Networking 官方認證模擬題 + ITS Networking 官方試題 | 所有題目均為原始內容</footer>
 </div>
 
 <script>
-// ======================= 完整真實題庫 (264題，全部來自用戶提供的文本) =======================
+// ======================= 完整真實題庫 (264題，保留全部內容) =======================
 const QUESTION_SET = [
-    // 第1-184題：MTA Networking (依據用戶貼文)
     { id:1, text:"組織成員交換資料的私人網路是？", options:["乙太網路","外部網路","周邊網路","內部網路"], correct:["D"], type:"single", explanation:"內部網路(Intranet)為組織內部私有網路。" },
     { id:2, text:"在區域網路(LAN)拓樸中，主要的媒體存取方法為？(複選)", options:["NAT","爭用(Contention)","結合","權杖傳遞"], correct:["B","D"], type:"multi", explanation:"CSMA/CD(爭用)與權杖傳遞為常見媒體存取控制。" },
     { id:3, text:"將IP位址對應到媒體存取控制(MAC)位址的通訊協定是？", options:["ARP","GOPHER","RARP","SMTP"], correct:["A"], type:"single", explanation:"ARP(Address Resolution Protocol)解析IP→MAC。" },
@@ -220,7 +237,6 @@ const QUESTION_SET = [
     { id:158, text:"802.11n無線標準指定54Mbps的最大資料速率。(請選擇正確選項)", options:["10Mbps","11-128Mbps","300-600Mbps","不需要變更"], correct:["C"], type:"single", explanation:"802.11n最大速率可達600Mbps，常見300-600Mbps。" },
     { id:159, text:"用來尋找網路資源的查詢通訊協定是使用者資料包通訊協定。(請選擇正確選項)", options:["網路檔案系統(NFS)","不須變更","輕量型目錄存取通訊協定(LDAP)","網際網路群組管理通訊協定(ICMP)"], correct:["C"], type:"single", explanation:"LDAP用於目錄服務查詢。" },
     { id:160, text:"橋接是一種透過OSI第3層，將封包從來源傳送到目的地的程序。(請選擇正確選項)", options:["路由","交換","重複","不要變更"], correct:["A"], type:"single", explanation:"路由在第3層進行。" },
-    // 配對題簡化：將原配對題轉為單選或多選題，確保涵蓋所有考點
     { id:161, text:"請配對：10G BaseT單一模式光纖的最大長度？", options:["40km","55m","168m","100m"], correct:["A"], type:"single", explanation:"單模光纖可達40公里。" },
     { id:162, text:"請配對：10G BaseT CAT6的最大長度？", options:["40km","55m","168m","100m"], correct:["B"], type:"single", explanation:"10GBASE-T Cat6a可達100m，但CAT6通常55m。" },
     { id:163, text:"請配對：1000 BaseT CAT6的最大長度？", options:["40km","55m","168m","100m"], correct:["D"], type:"single", explanation:"1000BaseT最大100公尺。" },
@@ -245,7 +261,6 @@ const QUESTION_SET = [
     { id:182, text:"FDDI和SONET所使用的實體拓樸是？", options:["星形","環狀","網狀","匯流排"], correct:["B"], type:"single", explanation:"FDDI/SONET為環狀拓樸。" },
     { id:183, text:"公用網際網路基礎的實體拓樸是？", options:["星形","環狀","網狀","匯流排"], correct:["C"], type:"single", explanation:"網際網路核心為網狀拓樸。" },
     { id:184, text:"交換器只會將單點傳播封包傳送至一個目的地連接埠。(正確/錯誤)", options:["正確","錯誤"], correct:["A"], type:"single", explanation:"交換器依據MAC表轉發單播。" },
-    // ITS Networking 940分解答部分 (185-224)
     { id:185, text:"您應該使用哪個網路硬體工具來判斷纜線能否達到1000Mbps全雙工？", options:["音頻查線器","纜線測試器","萬用電表","時域反射計(TDR)"], correct:["B"], type:"single", explanation:"纜線測試器可驗證速度能力。" },
     { id:186, text:"您是ISP技術人員，客戶無法存取網際網路。您應該先完成哪三個動作？(複選)", options:["要求客戶更新作業系統","要求客戶刪除Hosts檔案","要求客戶檢查數據機指示燈","要求客戶重新啟動數據機","從遠端登入客戶電腦","執行線路測試檢查ISP與客戶連線能力"], correct:["C","D","F"], type:"multi", explanation:"基本疑難排解：檢查指示燈、重啟數據機、測試線路。" },
     { id:187, text:"哪種類型的網路涵蓋最大的區域？", options:["WAN","CAN","PAN","LAN"], correct:["A"], type:"single", explanation:"WAN涵蓋範圍最大。" },
@@ -286,7 +301,6 @@ const QUESTION_SET = [
     { id:222, text:"您應該使用哪種工具來分離出正確的纜線？(主配線架構)", options:["音頻查線器","萬用電表","纜線測試器","時域反射計"], correct:["A"], type:"single", explanation:"音頻查線器可追蹤線路。" },
     { id:223, text:"Ping公用程式使用哪種通訊協定來測試與遠端主機的通訊？", options:["BOOTP","HTTP","ICMP","OSPF"], correct:["C"], type:"single", explanation:"Ping使用ICMP。" },
     { id:224, text:"網際網路是根據哪一個網路拓樸所設計？", options:["環狀","匯流排","網狀","星形"], correct:["C"], type:"single", explanation:"網際網路核心為網狀。" },
-    // ITS Networking 800分解答部分 (225-264)
     { id:225, text:"哪個實體網路拓樸藉由提供備援通訊路徑來提供容錯通訊？", options:["網狀","星形","環狀","匯流排"], correct:["A"], type:"single", explanation:"網狀拓樸有冗餘路徑。" },
     { id:226, text:"您使用FQDN Ping沒有收到回應，接著用IP位址Ping收到回應，為什麼？", options:["NSLOOKUP已停止","DNS無法解析","DHCP離線","PING設定不正確"], correct:["B"], type:"single", explanation:"DNS解析失敗。" },
     { id:227, text:"使用無線網路時必須考量安全性的原因是？", options:["無法加密傳輸","潛在串音問題","無線電廣播存取方法","頻率調變問題"], correct:["C"], type:"single", explanation:"無線廣播易遭攔截。" },
@@ -329,7 +343,7 @@ const QUESTION_SET = [
     { id:264, text:"哪種類型的連接埠用來支援兩個交換器之間的VLAN流量？", options:["主幹連接埠","LAN連接埠","WAN連接埠","虛擬連接埠"], correct:["A"], type:"single", explanation:"Trunk埠傳輸多VLAN。" }
 ];
 
-// 以下為應用邏輯 (與之前相同，保持互動功能)
+// 以下為應用邏輯
 let userAnswers = new Array(QUESTION_SET.length).fill(null);
 let answerStatus = new Array(QUESTION_SET.length).fill(false);
 let currentIndex = 0;
@@ -351,7 +365,7 @@ function renderCurrentQuestion() {
             if(q.type === 'multi' && Array.isArray(savedAnswer)) checkedAttr = savedAnswer.includes(letter);
             else if(q.type === 'single' && savedAnswer === letter) checkedAttr = true;
         }
-        optionsHtml += `<label class="option"><input type="${inputType}" name="q_${q.id}" value="${letter}" ${checkedAttr ? 'checked' : ''}><span class="option-text"><strong>${letter}.</strong> ${opt}</span></label>`;
+        optionsHtml += `<label class="option"><input type="${inputType}" name="q_${q.id}" value="${letter}" ${checkedAttr ? 'checked' : ''}><span class="option-text"><strong>${letter}.</strong> ${escapeHtml(opt)}</span></label>`;
     });
 
     let feedbackHtml = '';
@@ -376,6 +390,7 @@ function renderCurrentQuestion() {
     document.getElementById('clearAnswerBtn').addEventListener('click', () => clearCurrentAnswer());
     document.getElementById('progressText').innerText = `第 ${currentIndex+1} / ${QUESTION_SET.length} 題 | 已答: ${answerStatus.filter(v=>v===true).length}`;
     document.getElementById('prevBtn').disabled = (currentIndex === 0);
+    document.getElementById('jumpToInput').value = currentIndex+1;
 }
 
 function formatCorrectAnswer(correctArr) { return correctArr.join(', '); }
@@ -413,10 +428,24 @@ function submitCurrentAnswer() {
 function clearCurrentAnswer() { userAnswers[currentIndex]=null; answerStatus[currentIndex]=false; renderCurrentQuestion(); }
 function nextQuestion() { if(currentIndex+1 < QUESTION_SET.length) { currentIndex++; renderCurrentQuestion(); } else alert('已完成所有題目！'); }
 function prevQuestion() { if(currentIndex>0) { currentIndex--; renderCurrentQuestion(); } }
-function resetProgress() { if(confirm('重設所有作答？')) { userAnswers.fill(null); answerStatus.fill(false); currentIndex=0; renderCurrentQuestion(); document.getElementById('scorePanel').innerHTML='📊 進度已重設。'; } }
-function showTotalScore() { let total=0; for(let i=0;i<QUESTION_SET.length;i++) if(answerStatus[i] && userAnswers[i]!==null && checkAnswer(i,userAnswers[i])) total++; document.getElementById('scorePanel').innerHTML=`📈 目前答對 ${total} / ${QUESTION_SET.length} 題 (${((total/QUESTION_SET.length)*100).toFixed(1)}%)。`; }
+function resetProgress() { if(confirm('重設所有作答？')) { userAnswers.fill(null); answerStatus.fill(false); currentIndex=0; renderCurrentQuestion(); document.getElementById('scoreMessage').innerHTML='📊 進度已重設，分數已歸零。'; } }
+function showTotalScore() { let total=0; for(let i=0;i<QUESTION_SET.length;i++) if(answerStatus[i] && userAnswers[i]!==null && checkAnswer(i,userAnswers[i])) total++; document.getElementById('scoreMessage').innerHTML=`📈 目前答對 ${total} / ${QUESTION_SET.length} 題 (${((total/QUESTION_SET.length)*100).toFixed(1)}%)。`; }
 function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-function bindEvents() { document.getElementById('prevBtn').addEventListener('click',prevQuestion); document.getElementById('nextBtn').addEventListener('click',nextQuestion); document.getElementById('resetBtn').addEventListener('click',resetProgress); document.getElementById('showScoreBtn').addEventListener('click',showTotalScore); }
+function jumpToQuestion() {
+    let target = parseInt(document.getElementById('jumpToInput').value);
+    if(isNaN(target)) target = 1;
+    target = Math.min(QUESTION_SET.length, Math.max(1, target));
+    currentIndex = target-1;
+    renderCurrentQuestion();
+}
+function bindEvents() {
+    document.getElementById('prevBtn').addEventListener('click',prevQuestion);
+    document.getElementById('nextBtn').addEventListener('click',nextQuestion);
+    document.getElementById('resetBtn').addEventListener('click',resetProgress);
+    document.getElementById('showScoreBtnBottom').addEventListener('click',showTotalScore);
+    document.getElementById('jumpBtn').addEventListener('click',jumpToQuestion);
+    document.getElementById('jumpToInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') jumpToQuestion(); });
+}
 function init() { bindEvents(); renderCurrentQuestion(); }
 init();
 </script>
