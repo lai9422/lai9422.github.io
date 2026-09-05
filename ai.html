@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心理陪伴生成式AI · 40頁完整提案</title>
+    <!-- Tailwind via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background: radial-gradient(circle at 10% 20%, #0b1120, #121b2b);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .slide-container {
+            position: relative;
+            width: 100%;
+            max-width: 1280px;
+            height: 820px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 48px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slides-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 32px 48px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.5s ease;
+            transform: scale(0.97);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.15) transparent;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+            z-index: 10;
+        }
+
+        .slide::-webkit-scrollbar { width: 4px; }
+        .slide::-webkit-scrollbar-thumb { background: rgba(255, 215, 100, 0.3); border-radius: 10px; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tag {
+            background: rgba(255, 215, 100, 0.1);
+            border: 1px solid rgba(255, 215, 100, 0.15);
+            color: #f6d365;
+            padding: 2px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+        .tag-blue { background: rgba(100, 180, 255, 0.1); border-color: rgba(100, 180, 255, 0.15); color: #74b9ff; }
+        .tag-rose { background: rgba(255, 100, 150, 0.1); border-color: rgba(255, 100, 150, 0.15); color: #ff6b81; }
+        .tag-green { background: rgba(100, 220, 150, 0.1); border-color: rgba(100, 220, 150, 0.15); color: #55efc4; }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            width: 44px;
+            height: 44px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .nav-btn:hover { background: rgba(255, 215, 100, 0.15); color: #f6d365; border-color: rgba(255, 215, 100, 0.3); }
+
+        .title-lg { font-size: 3rem; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
+        @media (max-width: 768px) {
+            .slide { padding: 16px; }
+            .title-lg { font-size: 1.8rem; }
+            .slide-container { height: 90vh; border-radius: 24px; }
+        }
+
+        .progress-bar { height: 3px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; width: 100%; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #f6d365, #fda085); transition: width 0.4s ease; }
+        
+        .flow-node {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 40px;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="slide-container">
+    <!-- 頂部資訊列 -->
+    <div class="flex items-center justify-between px-8 pt-5 pb-2 text-white/40 text-sm tracking-wide flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <span class="w-2 h-2 bg-amber-400/80 rounded-full animate-pulse"></span>
+            <span>心理陪伴生成式 AI · 可治理流程提案</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span id="slideCounter" class="text-white/60 font-mono">1 / 40</span>
+            <div class="w-40 progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 2.5%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 幻燈片區塊 -->
+    <div class="slides-wrapper" id="slidesWrapper">
+        <!-- 1. 封面 -->
+        <div class="slide active" data-index="0">
+            <div class="flex flex-col justify-center h-full items-start max-w-4xl mx-auto">
+                <div class="mb-6 inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-amber-300/80 text-sm tracking-widest uppercase">2026 · 可治理 AI 系統</div>
+                <h1 class="title-lg text-white leading-[1.1] mb-4">心理陪伴<br><span class="gradient-text">生成式 AI 模型</span></h1>
+                <p class="text-xl text-white/60 font-light max-w-2xl mb-6 tracking-wide">前置 · 分流 · 輔助 — 可信任的心理支持前置層</p>
+                <div class="flex flex-wrap gap-4 text-white/40 text-sm">
+                    <div class="flex items-center gap-2"><span class="tag">PII 遮蔽</span> NER + Regex</div>
+                    <div class="flex items-center gap-2"><span class="tag tag-blue">情緒分類</span> mDeBERTa zero-shot</div>
+                    <div class="flex items-center gap-2"><span class="tag tag-rose">共情評估</span> Embedding 相似度</div>
+                </div>
+                <div class="mt-10 pt-6 border-t border-white/5 w-full flex justify-between items-end">
+                    <span class="text-white/20 text-xs">AI 負責承接與整理；人負責判斷與介入</span>
+                    <span class="text-white/30 text-sm">2026.09 技術發表</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 議程 -->
+        <div class="slide" data-index="1">
+            <h2 class="text-3xl font-bold text-white mb-8">今日議程</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 content-center">
+                <div class="glass-card p-6 flex items-center gap-4"><span class="text-amber-400 text-2xl font-mono">01</span><span class="text-white/80">痛點與挑戰</span></div>
+                <div class="glass-card p-6 flex items-center gap-4"><span class="text-amber-400 text-2xl font-mono">02</span><span class="text-white/80">台灣現有案例對比</span></div>
+                <div class="glass-card p-6 flex items-center gap-4"><span class="text-amber-400 text-2xl font-mono">03</span><span class="text-white/80">六大模組架構</span></div>
+                <div class="glass-card p-6 flex items-center gap-4"><span class="text-amber-400 text-2xl font-mono">04</span><span class="text-white/80">核心流程：先判斷再生成</span></div>
+                <div class="glass-card p-6 flex items-center gap-4"><span class="text-amber-400 text-2xl font-mono">05</span><span class="text-white/80">情緒分析 vs 共情計算</span></div>
+                <div class="glass-card p-6 flex items-center gap-4"><span class="text-amber-400 text-2xl font-mono">06</span><span class="text-white/80">多層次隱私工程</span></div>
+                <div class="glass-card p-6 flex items-center gap-4"><span class="text-amber-400 text-2xl font-mono">07</span><span class="text-white/80">並發設計與未來展望</span></div>
+                <div class="glass-card p-6 flex items-center gap-4"><span class="text-amber-400 text-2xl font-mono">08</span><span class="text-white/80">結論：流程治理的價值</span></div>
+            </div>
+        </div>
+
+        <!-- 3. 痛點：即時性不足 -->
+        <div class="slide" data-index="2">
+            <div class="flex items-center gap-3 mb-4"><span class="text-amber-400 text-2xl"><i class="fas fa-exclamation-triangle"></i></span><span class="text-white/40 text-sm tracking-widest">痛點一</span></div>
+            <h2 class="text-3xl font-bold text-white mb-4">即時性不足</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-white/5 border-l-4 border-amber-400">
+                <p class="text-white/70 text-lg">情緒困擾往往在<span class="text-amber-400 font-semibold">非預期的時間點</span>發生，例如夜間或週末。</p>
+                <p class="text-white/40 mt-4">專業心理諮詢服務有固定工作時間，導致使用者在情緒低谷時難以即時獲得支援。</p>
+                <div class="mt-6 bg-rose-400/10 border border-rose-400/20 rounded-xl p-4 text-rose-300/80 text-sm"><i class="fas fa-clock mr-2"></i> 等待諮商期間，情緒可能持續惡化，錯過最佳介入時機。</div>
+            </div>
+        </div>
+
+        <!-- 4. 痛點：表達困難 -->
+        <div class="slide" data-index="3">
+            <div class="flex items-center gap-3 mb-4"><span class="text-blue-400 text-2xl"><i class="fas fa-comment-slash"></i></span><span class="text-white/40 text-sm tracking-widest">痛點二</span></div>
+            <h2 class="text-3xl font-bold text-white mb-4">表達困難</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-white/5 border-l-4 border-blue-400">
+                <p class="text-white/70 text-lg">許多人面對陌生人（即使是專業心理師）時，<span class="text-blue-400 font-semibold">難以啟齒</span>。</p>
+                <p class="text-white/40 mt-4">不知道從何說起自己的困擾，特別對於部分學生或高齡者，表達障礙可能更為顯著。</p>
+                <div class="mt-6 bg-blue-400/10 border border-blue-400/20 rounded-xl p-4 text-blue-300/80 text-sm"><i class="fas fa-user-shield mr-2"></i> 導致無法有效傳達自身狀態與需求。</div>
+            </div>
+        </div>
+
+        <!-- 5. 痛點：風險辨識挑戰 -->
+        <div class="slide" data-index="4">
+            <div class="flex items-center gap-3 mb-4"><span class="text-rose-400 text-2xl"><i class="fas fa-search"></i></span><span class="text-white/40 text-sm tracking-widest">痛點三</span></div>
+            <h2 class="text-3xl font-bold text-white mb-4">風險辨識挑戰</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-white/5 border-l-4 border-rose-400">
+                <p class="text-white/70 text-lg">在大量對話中，潛在的<span class="text-rose-400 font-semibold">自傷、他傷或危機訊號</span>可能被忽略。</p>
+                <p class="text-white/40 mt-4">人工篩選耗時費力，且容易受主觀判斷影響，高風險個案無法被及時轉介。</p>
+                <div class="mt-6 bg-rose-400/10 border border-rose-400/20 rounded-xl p-4 text-rose-300/80 text-sm"><i class="fas fa-bell mr-2"></i> 系統需要自動化風險初篩機制。</div>
+            </div>
+        </div>
+
+        <!-- 6. AI價值定位（概覽） -->
+        <div class="slide" data-index="5">
+            <div class="flex items-center gap-3 mb-4"><span class="text-amber-400 text-2xl"><i class="fas fa-bullseye"></i></span><span class="text-white/40 text-sm tracking-widest">定位</span></div>
+            <h2 class="text-3xl font-bold text-white mb-2">心理聊天機器人的價值定位</h2>
+            <p class="text-white/40 text-sm mb-6">輔助工具 · 非取代專業心理師</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+                <div class="glass-card p-8 flex flex-col items-center text-center border-t-2 border-amber-400/60">
+                    <i class="fas fa-heart text-4xl text-amber-400/80 mb-4"></i>
+                    <h4 class="text-white font-bold">情緒整理與初步陪伴</h4>
+                    <p class="text-white/40 text-sm">安全的空間自由表達，降低開口困難。</p>
+                </div>
+                <div class="glass-card p-8 flex flex-col items-center text-center border-t-2 border-blue-400/60">
+                    <i class="fas fa-route text-4xl text-blue-400/80 mb-4"></i>
+                    <h4 class="text-white font-bold">風險初步辨識與分流</h4>
+                    <p class="text-white/40 text-sm">NLP 辨識情緒狀態與潛在危機訊號。</p>
+                </div>
+                <div class="glass-card p-8 flex flex-col items-center text-center border-t-2 border-purple-400/60">
+                    <i class="fas fa-hand-holding-heart text-4xl text-purple-400/80 mb-4"></i>
+                    <h4 class="text-white font-bold">輔助專業人員</h4>
+                    <p class="text-white/40 text-sm">對話摘要與標註，提升諮詢效率。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. 價值：情緒整理 -->
+        <div class="slide" data-index="6">
+            <h2 class="text-2xl font-bold text-white mb-4"><i class="fas fa-heart text-amber-400 mr-3"></i>情緒整理與初步陪伴</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <ul class="space-y-4 text-white/70 text-lg">
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-2xl">•</span> 在使用者尚未獲得真人協助前，提供即時支持。</li>
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-2xl">•</span> 引導式對話協助初步整理思緒與感受。</li>
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-2xl">•</span> 匿名性與非評判性，鼓勵自由表達。</li>
+                </ul>
+                <div class="mt-6 text-white/40 text-sm bg-white/5 p-4 rounded-xl">減輕孤立感，穩定情緒。</div>
+            </div>
+        </div>
+
+        <!-- 8. 價值：風險分流 -->
+        <div class="slide" data-index="7">
+            <h2 class="text-2xl font-bold text-white mb-4"><i class="fas fa-route text-blue-400 mr-3"></i>風險初步辨識與分流</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <ul class="space-y-4 text-white/70 text-lg">
+                    <li class="flex items-start gap-4"><span class="text-blue-400 text-2xl">•</span> 情緒分類模型即時分析壓力與危機指數。</li>
+                    <li class="flex items-start gap-4"><span class="text-blue-400 text-2xl">•</span> 區分一般陪伴、壓力升高與潛在危機狀態。</li>
+                    <li class="flex items-start gap-4"><span class="text-blue-400 text-2xl">•</span> 高風險個案優先關注，觸發警報流程。</li>
+                </ul>
+                <div class="mt-6 text-white/40 text-sm bg-white/5 p-4 rounded-xl">輔助人工介入，提升資源運用效率。</div>
+            </div>
+        </div>
+
+        <!-- 9. 價值：輔助專業 -->
+        <div class="slide" data-index="8">
+            <h2 class="text-2xl font-bold text-white mb-4"><i class="fas fa-hand-holding-heart text-purple-400 mr-3"></i>輔助專業人員</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <ul class="space-y-4 text-white/70 text-lg">
+                    <li class="flex items-start gap-4"><span class="text-purple-400 text-2xl">•</span> 自動生成對話摘要與情緒變化軌跡。</li>
+                    <li class="flex items-start gap-4"><span class="text-purple-400 text-2xl">•</span> 標註關鍵事件與潛在風險點。</li>
+                    <li class="flex items-start gap-4"><span class="text-purple-400 text-2xl">•</span> 去識別化紀錄供專業人員二次評估。</li>
+                </ul>
+                <div class="mt-6 text-white/40 text-sm bg-white/5 p-4 rounded-xl">讓心理師專注於深度判斷與介入。</div>
+            </div>
+        </div>
+
+        <!-- 10. 台大曉曉 -->
+        <div class="slide" data-index="9">
+            <div class="flex items-center gap-3 mb-4"><span class="text-amber-400 text-2xl"><i class="fas fa-university"></i></span><span class="text-white/40 text-sm tracking-widest">台灣案例</span></div>
+            <h2 class="text-3xl font-bold text-white mb-2">台大「曉曉」</h2>
+            <p class="text-white/40 text-sm mb-4">高齡陪伴與生命故事</p>
+            <div class="glass-card p-8 flex-1 flex flex-col bg-white/5">
+                <div class="grid grid-cols-2 gap-4 flex-1">
+                    <div><span class="text-white/60 font-bold">主要對象</span><p class="text-white/40">熟齡者</p></div>
+                    <div><span class="text-white/60 font-bold">核心功能</span><p class="text-white/40">個性化對話、回憶引導、關懷延伸</p></div>
+                    <div><span class="text-white/60 font-bold">技術重點</span><p class="text-white/40">生成式 AI + RAG + 情緒辨識</p></div>
+                    <div><span class="text-white/60 font-bold">限制</span><p class="text-white/40">偏陪伴敘事，風險介入能力有限</p></div>
+                </div>
+                <div class="mt-4 text-amber-300/70 text-sm border-t border-white/5 pt-4">啟發：情緒感知與人格化設計</div>
+            </div>
+        </div>
+
+        <!-- 11. 清華小慢 -->
+        <div class="slide" data-index="10">
+            <div class="flex items-center gap-3 mb-4"><span class="text-blue-400 text-2xl"><i class="fas fa-graduation-cap"></i></span><span class="text-white/40 text-sm tracking-widest">台灣案例</span></div>
+            <h2 class="text-3xl font-bold text-white mb-2">清華「小慢」</h2>
+            <p class="text-white/40 text-sm mb-4">諮商前的 AI 助理</p>
+            <div class="glass-card p-8 flex-1 flex flex-col bg-white/5">
+                <div class="grid grid-cols-2 gap-4 flex-1">
+                    <div><span class="text-white/60 font-bold">主要對象</span><p class="text-white/40">學生／諮商前使用者</p></div>
+                    <div><span class="text-white/60 font-bold">核心功能</span><p class="text-white/40">整理情緒、產生摘要、輔助晤談</p></div>
+                    <div><span class="text-white/60 font-bold">技術重點</span><p class="text-white/40">Claude API、無登入、無儲存</p></div>
+                    <div><span class="text-white/60 font-bold">限制</span><p class="text-white/40">無長期記憶，風險評估能力受限</p></div>
+                </div>
+                <div class="mt-4 text-blue-300/70 text-sm border-t border-white/5 pt-4">啟發：隱私保護與工具性定位</div>
+            </div>
+        </div>
+
+        <!-- 12. 競品對比 -->
+        <div class="slide" data-index="11">
+            <h2 class="text-3xl font-bold text-white mb-4">本系統 vs 台灣現有案例</h2>
+            <div class="overflow-x-auto flex-1 flex items-center">
+                <table class="w-full text-left border-collapse">
+                    <thead class="text-white/40 text-xs border-b border-white/5"><tr><th class="py-3">面向</th><th class="py-3">曉曉</th><th class="py-3">小慢</th><th class="py-3 text-amber-400">本系統</th></tr></thead>
+                    <tbody class="text-white/60 text-sm divide-y divide-white/5">
+                        <tr><td class="py-4 font-bold text-white/80">核心定位</td><td>陪伴敘事</td><td>諮商前整理</td><td class="text-amber-300">可治理的前置支持</td></tr>
+                        <tr><td class="py-4 font-bold text-white/80">風險管理</td><td>有限</td><td>無</td><td class="text-amber-300">危機預警 + 分流</td></tr>
+                        <tr><td class="py-4 font-bold text-white/80">隱私設計</td><td>一般</td><td>無儲存</td><td class="text-amber-300">PII遮蔽+鹽hash+分離DB</td></tr>
+                        <tr><td class="py-4 font-bold text-white/80">共情評估</td><td>無</td><td>無</td><td class="text-amber-300">認知+情感雙維度</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 13. 系統目的總覽 -->
+        <div class="slide" data-index="12">
+            <div class="flex items-center gap-3 mb-4"><span class="text-amber-400 text-2xl"><i class="fas fa-flag"></i></span><span class="text-white/40 text-sm tracking-widest">目的</span></div>
+            <h2 class="text-3xl font-bold text-white mb-6">前置 · 分流 · 輔助</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+                <div class="glass-card p-8 flex flex-col items-center text-center"><i class="fas fa-door-open text-4xl text-amber-400 mb-4"></i><h4 class="text-white font-bold">前置</h4><p class="text-white/40 text-sm">低門檻即時情緒支持，降低開口困難。</p></div>
+                <div class="glass-card p-8 flex flex-col items-center text-center"><i class="fas fa-code-branch text-4xl text-blue-400 mb-4"></i><h4 class="text-white font-bold">分流</h4><p class="text-white/40 text-sm">精準辨識情緒狀態，區分風險等級。</p></div>
+                <div class="glass-card p-8 flex flex-col items-center text-center"><i class="fas fa-users-gear text-4xl text-purple-400 mb-4"></i><h4 class="text-white font-bold">輔助</h4><p class="text-white/40 text-sm">提供聚焦資訊，提升專業人員效率。</p></div>
+            </div>
+        </div>
+
+        <!-- 14. 六大模組概覽 -->
+        <div class="slide" data-index="13">
+            <h2 class="text-3xl font-bold text-white mb-4">六大可操作模組</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1 content-center">
+                <div class="glass-card p-5 text-center"><span class="tag">1</span><p class="text-white font-bold mt-2">PII 遮蔽</p><p class="text-white/30 text-xs">NER + Regex</p></div>
+                <div class="glass-card p-5 text-center"><span class="tag tag-blue">2</span><p class="text-white font-bold mt-2">情緒分類</p><p class="text-white/30 text-xs">mDeBERTa zero-shot</p></div>
+                <div class="glass-card p-5 text-center"><span class="tag tag-green">3</span><p class="text-white font-bold mt-2">RAG 檢索</p><p class="text-white/30 text-xs">text2vec + Faiss</p></div>
+                <div class="glass-card p-5 text-center"><span class="tag tag-rose">4</span><p class="text-white font-bold mt-2">回覆生成</p><p class="text-white/30 text-xs">Llama-Breeze2-8B</p></div>
+                <div class="glass-card p-5 text-center"><span class="tag tag-blue">5</span><p class="text-white font-bold mt-2">共情評估</p><p class="text-white/30 text-xs">Embedding 相似度</p></div>
+                <div class="glass-card p-5 text-center"><span class="tag">6</span><p class="text-white font-bold mt-2">後台治理</p><p class="text-white/30 text-xs">審核佇列</p></div>
+            </div>
+        </div>
+
+        <!-- 15. 模組1：PII遮蔽 -->
+        <div class="slide" data-index="14">
+            <h2 class="text-2xl font-bold text-white mb-2"><i class="fas fa-user-secret text-amber-400 mr-3"></i>模組一：PII 遮蔽</h2>
+            <p class="text-white/40 text-sm mb-4">在數據進入處理流程前，移除所有可識別個人身份的資訊。</p>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-white/5">
+                <div class="flex items-center gap-4"><span class="text-amber-400 text-xl"><i class="fas fa-microchip"></i></span><span class="text-white font-bold">技術：NER + Regex</span></div>
+                <ul class="mt-4 space-y-3 text-white/60 text-sm">
+                    <li class="flex items-start gap-3"><span class="text-amber-300 text-xs">•</span> 命名實體識別 (NER) 辨識人名、地名、組織名。</li>
+                    <li class="flex items-start gap-3"><span class="text-amber-300 text-xs">•</span> 正則表達式 (Regex) 補強電話、信箱、身分證字號。</li>
+                    <li class="flex items-start gap-3"><span class="text-amber-300 text-xs">•</span> 替換為通用標籤 (如 [姓名]、[電話])，保留語義。</li>
+                </ul>
+                <div class="mt-4 bg-emerald-400/10 border border-emerald-400/20 rounded-xl p-3 text-emerald-300/80 text-sm"><i class="fas fa-check-circle mr-2"></i> 從源頭保護隱私，確保後續處理數據已去識別化。</div>
+            </div>
+        </div>
+
+        <!-- 16. 模組2：情緒分類 -->
+        <div class="slide" data-index="15">
+            <h2 class="text-2xl font-bold text-white mb-2"><i class="fas fa-brain text-blue-400 mr-3"></i>模組二：情緒分類</h2>
+            <p class="text-white/40 text-sm mb-4">即時判斷使用者情緒狀態、壓力程度與潛在危機風險。</p>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-white/5">
+                <div class="flex items-center gap-4"><span class="text-blue-400 text-xl"><i class="fas fa-microchip"></i></span><span class="text-white font-bold">技術：mDeBERTa zero-shot</span></div>
+                <ul class="mt-4 space-y-3 text-white/60 text-sm">
+                    <li class="flex items-start gap-3"><span class="text-blue-300 text-xs">•</span> 無需特定情緒標籤訓練數據，泛用性強。</li>
+                    <li class="flex items-start gap-3"><span class="text-blue-300 text-xs">•</span> 輸出多維度標籤：焦慮、憂鬱、憤怒、絕望等。</li>
+                    <li class="flex items-start gap-3"><span class="text-blue-300 text-xs">•</span> 設定危機閾值，觸發後續分流。</li>
+                </ul>
+                <div class="mt-4 bg-rose-400/10 border border-rose-400/20 rounded-xl p-3 text-rose-300/80 text-sm"><i class="fas fa-bell mr-2"></i> 系統的「安全閥」— 第一時間辨識潛在危險。</div>
+            </div>
+        </div>
+
+        <!-- 17. 模組3：RAG檢索 -->
+        <div class="slide" data-index="16">
+            <h2 class="text-2xl font-bold text-white mb-2"><i class="fas fa-database text-green-400 mr-3"></i>模組三：RAG 檢索</h2>
+            <p class="text-white/40 text-sm mb-4">為 LLM 提供外部知識，確保回覆專業性與一致性。</p>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-white/5">
+                <div class="flex items-center gap-4"><span class="text-green-400 text-xl"><i class="fas fa-microchip"></i></span><span class="text-white font-bold">技術：text2vec + Faiss</span></div>
+                <ul class="mt-4 space-y-3 text-white/60 text-sm">
+                    <li class="flex items-start gap-3"><span class="text-green-300 text-xs">•</span> 知識庫：心理教育文章、校園資源、CBT 技巧。</li>
+                    <li class="flex items-start gap-3"><span class="text-green-300 text-xs">•</span> 向量化後儲存於 Faiss 向量資料庫。</li>
+                    <li class="flex items-start gap-3"><span class="text-green-300 text-xs">•</span> 即時檢索最相關片段，作為 LLM 上下文。</li>
+                </ul>
+                <div class="mt-4 bg-green-400/10 border border-green-400/20 rounded-xl p-3 text-green-300/80 text-sm"><i class="fas fa-check-circle mr-2"></i> 降低幻覺 (Hallucination)，提升回覆可信度。</div>
+            </div>
+        </div>
+
+        <!-- 18. 模組4：回覆生成 -->
+        <div class="slide" data-index="17">
+            <h2 class="text-2xl font-bold text-white mb-2"><i class="fas fa-robot text-rose-400 mr-3"></i>模組四：回覆生成</h2>
+            <p class="text-white/40 text-sm mb-4">生成支持性、專業且安全的心理回覆。</p>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-white/5">
+                <div class="flex items-center gap-4"><span class="text-rose-400 text-xl"><i class="fas fa-microchip"></i></span><span class="text-white font-bold">技術：Llama-Breeze2-8B (本地部署)</span></div>
+                <ul class="mt-4 space-y-3 text-white/60 text-sm">
+                    <li class="flex items-start gap-3"><span class="text-rose-300 text-xs">•</span> 本地部署，數據不外流，隱私可控。</li>
+                    <li class="flex items-start gap-3"><span class="text-rose-300 text-xs">•</span> CBT 提示詞引導結構化、問題解決導向回覆。</li>
+                    <li class="flex items-start gap-3"><span class="text-rose-300 text-xs">•</span> 預設安全規則，避免不當或超出能力範圍之回覆。</li>
+                </ul>
+                <div class="mt-4 bg-rose-400/10 border border-rose-400/20 rounded-xl p-3 text-rose-300/80 text-sm"><i class="fas fa-shield mr-2"></i> 提示工程 (Prompt Engineering) 是關鍵。</div>
+            </div>
+        </div>
+
+        <!-- 19. 模組5：共情評估 -->
+        <div class="slide" data-index="18">
+            <h2 class="text-2xl font-bold text-white mb-2"><i class="fas fa-heart-circle-check text-purple-400 mr-3"></i>模組五：共情評估</h2>
+            <p class="text-white/40 text-sm mb-4">確保 AI 回覆具備同理心且恰當。</p>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-white/5">
+                <div class="flex items-center gap-4"><span class="text-purple-400 text-xl"><i class="fas fa-microchip"></i></span><span class="text-white font-bold">技術：Embedding 相似度 + 規則</span></div>
+                <ul class="mt-4 space-y-3 text-white/60 text-sm">
+                    <li class="flex items-start gap-3"><span class="text-purple-300 text-xs">•</span> 認知共情：使用者訊息與 AI 回覆的餘弦相似度。</li>
+                    <li class="flex items-start gap-3"><span class="text-purple-300 text-xs">•</span> 情感共情：檢查是否包含情緒詞、肯定語句、反思。</li>
+                    <li class="flex items-start gap-3"><span class="text-purple-300 text-xs">•</span> 綜合評分，低分觸發重新生成機制。</li>
+                </ul>
+                <div class="mt-4 bg-purple-400/10 border border-purple-400/20 rounded-xl p-3 text-purple-300/80 text-sm"><i class="fas fa-check-double mr-2"></i> 系統的「品質控制員」。</div>
+            </div>
+        </div>
+
+        <!-- 20. 模組6：後台治理 -->
+        <div class="slide" data-index="19">
+            <h2 class="text-2xl font-bold text-white mb-2"><i class="fas fa-clipboard-list text-orange-400 mr-3"></i>模組六：後台治理</h2>
+            <p class="text-white/40 text-sm mb-4">專業人員可介入、可追蹤、可校準的治理機制。</p>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-white/5">
+                <div class="flex items-center gap-4"><span class="text-orange-400 text-xl"><i class="fas fa-microchip"></i></span><span class="text-white font-bold">技術：資料庫 + 審核佇列 (Review Queue)</span></div>
+                <ul class="mt-4 space-y-3 text-white/60 text-sm">
+                    <li class="flex items-start gap-3"><span class="text-orange-300 text-xs">•</span> 高風險或低共情回覆自動推送至佇列。</li>
+                    <li class="flex items-start gap-3"><span class="text-orange-300 text-xs">•</span> 心理師進行二次評估與人工介入。</li>
+                    <li class="flex items-start gap-3"><span class="text-orange-300 text-xs">•</span> 校準模型判斷，形成持續改進迴圈。</li>
+                </ul>
+                <div class="mt-4 bg-orange-400/10 border border-orange-400/20 rounded-xl p-3 text-orange-300/80 text-sm"><i class="fas fa-arrows-rotate mr-2"></i> 確保系統不脫離專業監管。</div>
+            </div>
+        </div>
+
+        <!-- 21. 核心流程總覽 -->
+        <div class="slide" data-index="20">
+            <div class="flex items-center gap-3 mb-4"><span class="text-amber-400 text-2xl"><i class="fas fa-sitemap"></i></span><span class="text-white/40 text-sm tracking-widest">核心流程</span></div>
+            <h2 class="text-3xl font-bold text-white mb-4">「先判斷，再生成」</h2>
+            <div class="glass-card p-6 flex-1 flex flex-col justify-center bg-white/5">
+                <div class="flex flex-wrap items-center justify-center gap-3 text-xs">
+                    <span class="flow-node">使用者</span> <i class="fas fa-arrow-right text-white/20"></i>
+                    <span class="flow-node border-amber-400/30 text-amber-300">PII 遮蔽</span> <i class="fas fa-arrow-right text-white/20"></i>
+                    <span class="flow-node border-blue-400/30 text-blue-300">情緒分類</span> <i class="fas fa-arrow-right text-white/20"></i>
+                    <span class="flow-node border-rose-400/30 text-rose-300">高風險？</span>
+                    <div class="w-full flex justify-center gap-8 my-2">
+                        <span class="text-white/30 text-[10px]">是 → 危機提示</span>
+                        <span class="text-white/30 text-[10px]">否 → RAG 檢索</span>
+                    </div>
+                    <i class="fas fa-arrow-down text-white/20 w-full text-center"></i>
+                    <span class="flow-node border-emerald-400/30 text-emerald-300">LLM 生成</span> <i class="fas fa-arrow-right text-white/20"></i>
+                    <span class="flow-node border-purple-400/30 text-purple-300">共情評估</span> <i class="fas fa-arrow-right text-white/20"></i>
+                    <span class="flow-node border-white/20">發送 & 審核</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 22. 流程：輸入與PII -->
+        <div class="slide" data-index="21">
+            <h2 class="text-2xl font-bold text-white mb-4">步驟 1：使用者輸入 → PII 遮蔽</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <div class="flex items-center gap-6"><i class="fas fa-user text-4xl text-white/30"></i><i class="fas fa-arrow-right text-amber-400 text-2xl"></i><i class="fas fa-mask text-4xl text-amber-400"></i></div>
+                <p class="text-white/60 mt-6">NER 與 Regex 協作，自動偵測並替換姓名、電話、地址、身分證字號。</p>
+                <div class="bg-white/5 p-4 rounded-xl mt-4 text-white/40 text-sm font-mono">原始：我叫王小明，電話是 0912-345-678。<br>遮蔽後：我叫 [姓名]，電話是 [電話]。</div>
+            </div>
+        </div>
+
+        <!-- 23. 流程：情緒分類 -->
+        <div class="slide" data-index="22">
+            <h2 class="text-2xl font-bold text-white mb-4">步驟 2：情緒分類判斷</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <div class="flex items-center gap-6"><i class="fas fa-brain text-4xl text-blue-400"></i><i class="fas fa-arrow-right text-white/30 text-2xl"></i><i class="fas fa-chart-simple text-4xl text-blue-400"></i></div>
+                <p class="text-white/60 mt-6">mDeBERTa zero-shot 輸出情緒標籤 (焦慮、憂鬱等)、壓力指數、危機分數。</p>
+                <div class="mt-4 flex flex-wrap gap-3"><span class="tag tag-blue">焦慮: 0.78</span><span class="tag tag-rose">絕望: 0.45</span><span class="tag">自傷意圖: 0.12</span></div>
+            </div>
+        </div>
+
+        <!-- 24. 流程：高風險分支 -->
+        <div class="slide" data-index="23">
+            <h2 class="text-2xl font-bold text-white mb-4">分支：高風險 → 危機提示</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-rose-400/5 border-l-4 border-rose-400">
+                <p class="text-white/70 text-lg">當「自傷意圖 > 0.25」或危機分數超標，立即觸發。</p>
+                <ul class="mt-6 space-y-3 text-white/60 text-sm">
+                    <li class="flex items-start gap-3"><span class="text-rose-400 text-xs">•</span> 系統優先生成包含求助資源的安全回覆。</li>
+                    <li class="flex items-start gap-3"><span class="text-rose-400 text-xs">•</span> 提供生命線、心理諮詢專線等即時資訊。</li>
+                    <li class="flex items-start gap-3"><span class="text-rose-400 text-xs">•</span> 對話自動推送至後台審核佇列。</li>
+                </ul>
+                <div class="mt-4 bg-rose-400/20 border border-rose-400/30 rounded-xl p-3 text-rose-300/80 text-sm"><i class="fas fa-bell mr-2"></i> 確保高風險個案不被遺漏。</div>
+            </div>
+        </div>
+
+        <!-- 25. 流程：低風險分支 -->
+        <div class="slide" data-index="24">
+            <h2 class="text-2xl font-bold text-white mb-4">分支：低風險 → RAG 檢索</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-green-400/5 border-l-4 border-green-400">
+                <p class="text-white/70 text-lg">進入常規回覆生成流程。</p>
+                <ul class="mt-6 space-y-3 text-white/60 text-sm">
+                    <li class="flex items-start gap-3"><span class="text-green-400 text-xs">•</span> 根據使用者訊息與歷史摘要檢索知識庫。</li>
+                    <li class="flex items-start gap-3"><span class="text-green-400 text-xs">•</span> 檢索心理教育、CBT 技巧、校園資源。</li>
+                    <li class="flex items-start gap-3"><span class="text-green-400 text-xs">•</span> 提供 LLM 豐富的上下文資訊。</li>
+                </ul>
+                <div class="mt-4 bg-green-400/20 border border-green-400/30 rounded-xl p-3 text-green-300/80 text-sm"><i class="fas fa-database mr-2"></i> 提升回覆的專業性與具體性。</div>
+            </div>
+        </div>
+
+        <!-- 26. 流程：LLM生成 -->
+        <div class="slide" data-index="25">
+            <h2 class="text-2xl font-bold text-white mb-4">步驟 3：LLM 生成回覆</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <div class="flex items-center gap-6"><i class="fas fa-robot text-4xl text-emerald-400"></i><i class="fas fa-arrow-right text-white/30 text-2xl"></i><i class="fas fa-comment-dots text-4xl text-emerald-400"></i></div>
+                <p class="text-white/60 mt-6">Llama-Breeze2-8B 綜合考量：使用者訊息、情緒標籤、RAG 檢索結果、CBT 提示詞、安全規則。</p>
+                <div class="mt-4 flex flex-wrap gap-2"><span class="tag tag-green">CBT 引導</span><span class="tag tag-blue">支持性</span><span class="tag tag-rose">安全優先</span></div>
+            </div>
+        </div>
+
+        <!-- 27. 流程：共情評估門控 -->
+        <div class="slide" data-index="26">
+            <h2 class="text-2xl font-bold text-white mb-4">步驟 4：共情評估門控</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-purple-400/5 border-l-4 border-purple-400">
+                <p class="text-white/70 text-lg">生成後不立即發送，先通過品質門控。</p>
+                <ul class="mt-6 space-y-3 text-white/60 text-sm">
+                    <li class="flex items-start gap-3"><span class="text-purple-400 text-xs">•</span> 認知共情分數 (語義理解)。</li>
+                    <li class="flex items-start gap-3"><span class="text-purple-400 text-xs">•</span> 情感共情分數 (情緒回應)。</li>
+                    <li class="flex items-start gap-3"><span class="text-purple-400 text-xs">•</span> 加權計算總分，低於閾值觸發重試。</li>
+                </ul>
+                <div class="mt-4 bg-purple-400/20 border border-purple-400/30 rounded-xl p-3 text-purple-300/80 text-sm"><i class="fas fa-check-double mr-2"></i> 避免將機械式回覆傳送給使用者。</div>
+            </div>
+        </div>
+
+        <!-- 28. 流程：低共情重試 -->
+        <div class="slide" data-index="27">
+            <h2 class="text-2xl font-bold text-white mb-4">低共情 → 重新生成機制</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-yellow-400/5 border-l-4 border-yellow-400">
+                <p class="text-white/70 text-lg">當共情分數未達標，系統自動校準。</p>
+                <ul class="mt-6 space-y-3 text-white/60 text-sm">
+                    <li class="flex items-start gap-3"><span class="text-yellow-400 text-xs">•</span> 原始提示詞加上「更強同理心」指令。</li>
+                    <li class="flex items-start gap-3"><span class="text-yellow-400 text-xs">•</span> 再次送入 LLM 重新生成。</li>
+                    <li class="flex items-start gap-3"><span class="text-yellow-400 text-xs">•</span> 最多重試 2 次，確保品質。</li>
+                </ul>
+                <div class="mt-4 bg-yellow-400/20 border border-yellow-400/30 rounded-xl p-3 text-yellow-300/80 text-sm"><i class="fas fa-arrows-rotate mr-2"></i> 內建的品質控制環節。</div>
+            </div>
+        </div>
+
+        <!-- 29. 流程：儲存與審查 -->
+        <div class="slide" data-index="28">
+            <h2 class="text-2xl font-bold text-white mb-4">步驟 5：去識別化儲存與審查佇列</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <ul class="space-y-4 text-white/60 text-sm">
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-xl">•</span> 所有對話紀錄去識別化後寫入 history.db。</li>
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-xl">•</span> 高風險與低共情回覆推送至審核佇列。</li>
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-xl">•</span> 專業人員介入追蹤與校準。</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 30. 技術區分：情緒 vs 共情 (一) -->
+        <div class="slide" data-index="29">
+            <div class="flex items-center gap-3 mb-4"><span class="text-amber-400 text-2xl"><i class="fas fa-arrow-right-arrow-left"></i></span><span class="text-white/40 text-sm tracking-widest">技術區分</span></div>
+            <h2 class="text-3xl font-bold text-white mb-4">情緒分析 vs 共情計算</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+                <div class="glass-card p-8 border-t-4 border-amber-400"><h4 class="text-white font-bold"><i class="fas fa-exclamation-circle text-amber-400 mr-2"></i>情緒分析</h4><p class="text-white/40 text-sm mt-2">判斷使用者狀態，啟動危機提示。對象：使用者訊息。</p><span class="tag mt-4 inline-block">安全閥</span></div>
+                <div class="glass-card p-8 border-t-4 border-rose-400"><h4 class="text-white font-bold"><i class="fas fa-heart-circle-check text-rose-400 mr-2"></i>共情計算</h4><p class="text-white/40 text-sm mt-2">評估 AI 回覆品質，低分重新生成。對象：訊息+回覆配對。</p><span class="tag tag-rose mt-4 inline-block">品質控制員</span></div>
+            </div>
+        </div>
+
+        <!-- 31. 技術區分 (二) 整合策略 -->
+        <div class="slide" data-index="30">
+            <h2 class="text-2xl font-bold text-white mb-4">最佳整合策略：風險與品質分離</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center bg-white/5">
+                <ul class="space-y-4 text-white/70">
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-2xl">✓</span> 風險判斷不被回覆品質污染。</li>
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-2xl">✓</span> 即使 AI 回覆不夠共情，高風險仍優先處理。</li>
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-2xl">✓</span> 共情評估專注於提升回覆溫度。</li>
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-2xl">✓</span> 降低誤報，提升系統穩定性。</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 32. 隱私工程總覽 -->
+        <div class="slide" data-index="31">
+            <div class="flex items-center gap-3 mb-4"><span class="text-amber-400 text-2xl"><i class="fas fa-shield-halved"></i></span><span class="text-white/40 text-sm tracking-widest">隱私保護</span></div>
+            <h2 class="text-3xl font-bold text-white mb-6">多層次隱私工程</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                <div class="glass-card p-6 flex items-center gap-4"><i class="fas fa-mask text-2xl text-amber-400 w-10"></i><span class="text-white">PII 遮蔽 (NER+Regex)</span></div>
+                <div class="glass-card p-6 flex items-center gap-4"><i class="fas fa-hashtag text-2xl text-blue-400 w-10"></i><span class="text-white">加鹽雜湊 (Salted Hash)</span></div>
+                <div class="glass-card p-6 flex items-center gap-4"><i class="fas fa-database text-2xl text-purple-400 w-10"></i><span class="text-white">資料庫分離 (identity.db / history.db)</span></div>
+                <div class="glass-card p-6 flex items-center gap-4"><i class="fas fa-chart-simple text-2xl text-rose-400 w-10"></i><span class="text-white">差分隱私 (Differential Privacy)</span></div>
+            </div>
+        </div>
+
+        <!-- 33. 隱私：PII遮蔽詳情 -->
+        <div class="slide" data-index="32">
+            <h2 class="text-2xl font-bold text-white mb-4"><i class="fas fa-mask text-amber-400 mr-3"></i>PII 遮蔽詳情</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <p class="text-white/60">使用者訊息進入系統的第一步即進行遮蔽。</p>
+                <ul class="mt-4 space-y-2 text-white/50 text-sm">
+                    <li>• NER 辨識人名、地名、組織名。</li>
+                    <li>• Regex 匹配電話、信箱、身分證字號。</li>
+                    <li>• 替換為 `[姓名]`、`[電話]` 等通用標籤。</li>
+                </ul>
+                <div class="mt-4 bg-amber-400/10 p-4 rounded-xl border border-amber-400/20 text-amber-300/80 text-sm">確保 AI 模型無法接觸到可直接識別身份的資訊。</div>
+            </div>
+        </div>
+
+        <!-- 34. 隱私：加鹽雜湊 -->
+        <div class="slide" data-index="33">
+            <h2 class="text-2xl font-bold text-white mb-4"><i class="fas fa-hashtag text-blue-400 mr-3"></i>加鹽雜湊 (Salted Hash)</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <p class="text-white/60">外部平台 user_id 不直接儲存，經加鹽雜湊生成 internal_uid。</p>
+                <ul class="mt-4 space-y-2 text-white/50 text-sm">
+                    <li>• 加入隨機字串 (Salt) 再進行雜湊。</li>
+                    <li>• 單向不可逆，即使資料庫洩露也無法反推。</li>
+                    <li>• 切斷內部數據與外部真實身份的連結。</li>
+                </ul>
+                <div class="mt-4 bg-blue-400/10 p-4 rounded-xl border border-blue-400/20 text-blue-300/80 text-sm">確保內部識別符號無法逆推出真實使用者。</div>
+            </div>
+        </div>
+
+        <!-- 35. 隱私：資料庫分離 -->
+        <div class="slide" data-index="34">
+            <h2 class="text-2xl font-bold text-white mb-4"><i class="fas fa-database text-purple-400 mr-3"></i>資料庫分離</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <div class="flex items-center gap-8 justify-center">
+                    <div class="glass-card p-4 bg-white/5 text-center"><i class="fas fa-id-card text-3xl text-amber-400"></i><p class="text-white/40 text-xs">identity.db</p><p class="text-white/60">internal_uid + 匿名元數據</p></div>
+                    <i class="fas fa-arrows-left-right text-white/20 text-2xl"></i>
+                    <div class="glass-card p-4 bg-white/5 text-center"><i class="fas fa-message text-3xl text-blue-400"></i><p class="text-white/40 text-xs">history.db</p><p class="text-white/60">去識別化對話 + 情緒標籤</p></div>
+                </div>
+                <p class="text-white/50 text-sm mt-6 text-center">單一資料庫被洩露也無法拼湊完整個人樣貌。</p>
+            </div>
+        </div>
+
+        <!-- 36. 隱私：差分隱私 -->
+        <div class="slide" data-index="35">
+            <h2 class="text-2xl font-bold text-white mb-4"><i class="fas fa-chart-simple text-rose-400 mr-3"></i>差分隱私 (Differential Privacy)</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <p class="text-white/60">統計輸出中加入適量隨機雜訊 (Laplace noise)。</p>
+                <ul class="mt-4 space-y-2 text-white/50 text-sm">
+                    <li>• 單一使用者數據變化對最終結果影響極小。</li>
+                    <li>• 無法判斷特定使用者是否包含在數據集中。</li>
+                    <li>• 保護個體隱私，同時保留群體趨勢價值。</li>
+                </ul>
+                <div class="mt-4 bg-rose-400/10 p-4 rounded-xl border border-rose-400/20 text-rose-300/80 text-sm">支援公共心理健康決策，不犧牲隱私。</div>
+            </div>
+        </div>
+
+        <!-- 37. 並發挑戰 -->
+        <div class="slide" data-index="36">
+            <div class="flex items-center gap-3 mb-4"><span class="text-amber-400 text-2xl"><i class="fas fa-users"></i></span><span class="text-white/40 text-sm tracking-widest">並發設計</span></div>
+            <h2 class="text-3xl font-bold text-white mb-4">並發處理的挑戰</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+                <div class="glass-card p-8 border-l-4 border-rose-400"><h4 class="text-white font-bold"><i class="fas fa-bomb text-rose-400 mr-2"></i>Thread 暴增</h4><p class="text-white/40 text-sm">100人同時請求瞬間產生大量執行緒，導致 OOM。</p></div>
+                <div class="glass-card p-8 border-l-4 border-blue-400"><h4 class="text-white font-bold"><i class="fas fa-microchip text-blue-400 mr-2"></i>GPU 競爭</h4><p class="text-white/40 text-sm">多請求競爭 GPU，頻繁上下文切換，利用率下降。</p></div>
+                <div class="glass-card p-8 border-l-4 border-purple-400 md:col-span-2"><h4 class="text-white font-bold"><i class="fas fa-lock text-purple-400 mr-2"></i>鎖競爭</h4><p class="text-white/40 text-sm">共享資源鎖 (LLM) 導致序列化，吞吐量受限。</p></div>
+            </div>
+        </div>
+
+        <!-- 38. 並發解決方案 -->
+        <div class="slide" data-index="37">
+            <h2 class="text-2xl font-bold text-white mb-4">解決方案：ThreadPool + Queue + 鎖分離</h2>
+            <div class="glass-card p-8 flex-1 flex flex-col justify-center">
+                <ul class="space-y-4 text-white/70">
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-2xl">•</span> <span class="font-bold">ThreadPoolExecutor</span>：固定執行緒池 (max_workers=8)，限制並行數量。</li>
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-2xl">•</span> <span class="font-bold">工作佇列 (Queue)</span>：吸收瞬間流量高峰，平滑負載。</li>
+                    <li class="flex items-start gap-4"><span class="text-amber-400 text-2xl">•</span> <span class="font-bold">鎖分離</span>：emotion_lock (CPU) 與 llm_lock (GPU) 分離，最大化並行。</li>
+                </ul>
+                <div class="mt-4 bg-emerald-400/10 p-4 rounded-xl border border-emerald-400/20 text-emerald-300/80 text-sm">目標：穩定吞吐量與可預測延遲，支援 100 人同時使用。</div>
+            </div>
+        </div>
+
+        <!-- 39. 未來展望 -->
+        <div class="slide" data-index="38">
+            <div class="flex items-center gap-3 mb-4"><span class="text-amber-400 text-2xl"><i class="fas fa-rocket"></i></span><span class="text-white/40 text-sm tracking-widest">發展路徑</span></div>
+            <h2 class="text-3xl font-bold text-white mb-4">未來展望</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+                <div class="glass-card p-6 border-t-4 border-amber-400"><h4 class="text-white font-bold">短期 (3-6月)</h4><ul class="text-white/40 text-sm space-y-1 mt-2"><li>• 心理師審核回饋</li><li>• 共情重試優化</li><li>• 危機模板</li></ul></div>
+                <div class="glass-card p-6 border-t-4 border-blue-400"><h4 class="text-white font-bold">中期 (6-18月)</h4><ul class="text-white/40 text-sm space-y-1 mt-2"><li>• 校園 RAG 擴充</li><li>• CBT 路徑引導</li><li>• 摘要匯出協作</li></ul></div>
+                <div class="glass-card p-6 border-t-4 border-purple-400"><h4 class="text-white font-bold">長期 (18月+)</h4><ul class="text-white/40 text-sm space-y-1 mt-2"><li>• 跨校匿名儀表板</li><li>• 模型持續校準</li><li>• 生態系統整合</li></ul></div>
+            </div>
+        </div>
+
+        <!-- 40. 結論 -->
+        <div class="slide" data-index="39">
+            <div class="flex flex-col justify-center h-full max-w-4xl mx-auto">
+                <div class="flex items-center gap-3 mb-6"><span class="text-amber-400 text-2xl"><i class="fas fa-star"></i></span><span class="text-white/40 text-sm tracking-widest">核心價值</span></div>
+                <h2 class="text-4xl font-bold text-white leading-tight mb-6">
+                    心理 AI 的價值<br>
+                    <span class="gradient-text">在於流程治理</span>
+                </h2>
+                <div class="glass-card p-8 bg-white/5 border-l-4 border-amber-400 mb-8">
+                    <p class="text-white text-xl font-light">AI 負責承接與整理；<span class="text-amber-400 font-semibold">人負責判斷與介入</span></p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center"><i class="fas fa-shield-check text-amber-400 text-3xl mb-2"></i><p class="text-white/60 text-sm">可信任的<br>前置支持</p></div>
+                    <div class="text-center"><i class="fas fa-arrow-trend-up text-blue-400 text-3xl mb-2"></i><p class="text-white/60 text-sm">提升專業人員<br>工作效率</p></div>
+                    <div class="text-center"><i class="fas fa-lock text-rose-400 text-3xl mb-2"></i><p class="text-white/60 text-sm">隱私保護<br>與倫理合規</p></div>
+                </div>
+                <div class="mt-8 pt-6 border-t border-white/5 text-white/20 text-xs flex justify-between">
+                    <span>從工具到系統，從聊天到治理</span>
+                    <span>2026 心理 AI 技術發表</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部導航 -->
+    <div class="flex items-center justify-between px-8 py-4 border-t border-white/5 bg-black/10 backdrop-blur-sm flex-shrink-0">
+        <button id="prevBtn" class="nav-btn"><i class="fas fa-chevron-left text-sm"></i></button>
+        <div class="flex items-center gap-4">
+            <span class="text-white/30 text-xs hidden md:block">← / → 鍵盤切換</span>
+        </div>
+        <button id="nextBtn" class="nav-btn"><i class="fas fa-chevron-right text-sm"></i></button>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        let current = 0;
+
+        const counter = document.getElementById('slideCounter');
+        const progressFill = document.getElementById('progressFill');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        function goToSlide(index) {
+            if (index < 0) index = 0;
+            if (index >= totalSlides) index = totalSlides - 1;
+            if (index === current) return;
+
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+
+            counter.textContent = `${index + 1} / ${totalSlides}`;
+            const progress = ((index + 1) / totalSlides) * 100;
+            progressFill.style.width = `${progress}%`;
+
+            current = index;
+        }
+
+        function nextSlide() { goToSlide(current + 1); }
+        function prevSlide() { goToSlide(current - 1); }
+
+        prevBtn.addEventListener('click', prevSlide);
+        nextBtn.addEventListener('click', nextSlide);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                prevSlide();
+            }
+        });
+
+        // 觸控支援
+        let touchStartX = 0;
+        const container = document.querySelector('.slide-container');
+        container.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        container.addEventListener('touchend', (e) => {
+            const diff = touchStartX - e.changedTouches[0].screenX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) nextSlide();
+                else prevSlide();
+            }
+        }, { passive: true });
+
+        goToSlide(0);
+    })();
+</script>
+
+</body>
+</html>
